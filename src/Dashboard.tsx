@@ -60,9 +60,9 @@ function Tip({
 export function Dashboard({ state, now, viewer }: { state: GameState; now: number; viewer: Person }) {
   const [range, setRange] = useState<RangeId>("7")
   const byId = useMemo(() => new Map(INSTANCES.map((item) => [item.id, item])), [])
-  const partner: Person = viewer === "thiago" ? "rafael" : "thiago"
-  const youKey = roleLabel(viewer, viewer)
-  const partnerKey = roleLabel(partner, viewer)
+  const other: Person = viewer === "thiago" ? "rafael" : "thiago"
+  const youKey = roleLabel(viewer)
+  const otherKey = roleLabel(other)
 
   const view = useMemo(() => {
     const history = state.history.filter((event) => inRange(event.at, range, now))
@@ -73,7 +73,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
     const bySection = SECTIONS.map((section) => ({
       name: section.label,
       [youKey]: 0,
-      [partnerKey]: 0,
+      [otherKey]: 0,
       id: section.id,
     }))
 
@@ -83,7 +83,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
       if (!instance) continue
       const section = bySection.find((item) => item.id === instance.section)
       if (section) {
-        const key = event.user === viewer ? youKey : partnerKey
+        const key = event.user === viewer ? youKey : otherKey
         section[key] = Number(section[key] || 0) + 1
       }
       const value = instance.drops.reduce((sum, item) => sum + (state.prices[item.id] || 0), 0)
@@ -102,7 +102,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
     const line = keys.map((key) => ({
       name: `${key.slice(8, 10)}/${key.slice(5, 7)}`,
       [youKey]: history.filter((event) => event.user === viewer && dayKey(event.at) === key).length,
-      [partnerKey]: history.filter((event) => event.user === partner && dayKey(event.at) === key).length,
+      [otherKey]: history.filter((event) => event.user === other && dayKey(event.at) === key).length,
     }))
 
     const grouped = new Map<string, { sum: number; n: number }>()
@@ -127,13 +127,13 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
         id: instance.id,
         name: instance.name,
         you: own.filter((event) => event.user === viewer).length,
-        partner: own.filter((event) => event.user === partner).length,
+        other: own.filter((event) => event.user === other).length,
         avg: ownRuns.length ? ownRuns.reduce((sum, run) => sum + run.ms, 0) / ownRuns.length : 0,
       }
-    }).filter((row) => row.you || row.partner || row.avg)
+    }).filter((row) => row.you || row.other || row.avg)
 
     return { counts, time, zeny, bySection, line, slow, table, runs: [...runs].reverse().slice(0, 8), history }
-  }, [byId, now, partner, partnerKey, range, state, viewer, youKey])
+  }, [byId, now, other, otherKey, range, state, viewer, youKey])
 
   const axis = { fill: "#a9b6cf", fontSize: 11 }
   const hasWork = view.history.length > 0 || view.runs.length > 0 || Object.keys(state.active).length > 0
@@ -161,11 +161,11 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
           <em>{youKey}</em>
           <p className="fine">{money(view.zeny[viewer])}</p>
         </article>
-        <article className="kpi partner">
+        <article className="kpi other">
           <span>Conclusões</span>
-          <strong>{view.counts[partner]}</strong>
-          <em>{partnerKey}</em>
-          <p className="fine">{money(view.zeny[partner])}</p>
+          <strong>{view.counts[other]}</strong>
+          <em>{otherKey}</em>
+          <p className="fine">{money(view.zeny[other])}</p>
         </article>
         <article className="kpi you">
           <span>Tempo</span>
@@ -173,10 +173,10 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
           <em>{youKey}</em>
           <p className="fine">cronômetros parados e o que ainda roda</p>
         </article>
-        <article className="kpi partner">
+        <article className="kpi other">
           <span>Tempo</span>
-          <strong>{formatDuration(view.time[partner])}</strong>
-          <em>{partnerKey}</em>
+          <strong>{formatDuration(view.time[other])}</strong>
+          <em>{otherKey}</em>
           <p className="fine">cronômetros parados e o que ainda roda</p>
         </article>
       </section>
@@ -199,7 +199,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
                   <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
                   <Legend wrapperStyle={{ color: "#a9b6cf", fontSize: 12 }} />
                   <Bar dataKey={youKey} fill="#4ef0d3" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey={partnerKey} fill="#ff8f6b" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey={otherKey} fill="#ff8f6b" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -217,7 +217,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
                   <Tooltip content={<Tip />} />
                   <Legend wrapperStyle={{ color: "#a9b6cf", fontSize: 12 }} />
                   <Line type="monotone" dataKey={youKey} stroke="#4ef0d3" strokeWidth={2.6} dot={false} />
-                  <Line type="monotone" dataKey={partnerKey} stroke="#ff8f6b" strokeWidth={2.6} dot={false} />
+                  <Line type="monotone" dataKey={otherKey} stroke="#ff8f6b" strokeWidth={2.6} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -255,7 +255,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
                       {run.capped ? " · teto" : ""}
                     </b>
                     <span>
-                      {roleLabel(run.user, viewer)} · {formatWhen(run.at)}
+                      {roleLabel(run.user)} · {formatWhen(run.at)}
                     </span>
                   </li>
                 ))}
@@ -271,7 +271,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
                   <tr>
                     <th scope="col">Instância</th>
                     <th scope="col">{youKey}</th>
-                    <th scope="col">{partnerKey}</th>
+                    <th scope="col">{otherKey}</th>
                     <th scope="col">Tempo médio</th>
                   </tr>
                 </thead>
@@ -285,7 +285,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
                       <tr key={row.id}>
                         <th scope="row">{row.name}</th>
                         <td>{row.you}</td>
-                        <td>{row.partner}</td>
+                        <td>{row.other}</td>
                         <td>{row.avg ? formatDuration(row.avg) : "—"}</td>
                       </tr>
                     ))

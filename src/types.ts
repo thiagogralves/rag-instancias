@@ -7,6 +7,7 @@ export type Drop = {
   name: string
   detail: string
   crafts: string[]
+  itemId?: number
 }
 
 export type Instance = {

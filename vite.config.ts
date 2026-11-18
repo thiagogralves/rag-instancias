@@ -50,5 +50,11 @@ function ragApi(): Plugin {
 
 export default defineConfig({
   plugins: [react(), ragApi()],
-  server: { host: true, port: 5173 },
+  server: {
+    host: true,
+    port: 5173,
+    watch: {
+      ignored: ["**/public/art/CREDITS.txt", "**/data/**"],
+    },
+  },
 })

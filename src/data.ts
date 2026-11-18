@@ -1,38 +1,30 @@
 import type { Drop, Instance, SectionId } from "./types"
 
-function drop(id: string, name: string, detail: string, crafts: string[] = []): Drop {
-  return { id, name, detail, crafts }
+function drop(id: string, name: string, detail: string, crafts: string[] = [], itemId?: number): Drop {
+  return { id, name, detail, crafts, itemId }
 }
 
-const ira = drop(
-  "ira-deus-mar",
+const ira = drop("ira-deus-mar",
   "Ira do Deus do Mar",
   "Bigodes paga 1 no Normal e 5 no Difícil. Pelo mapa ainda caem bolsas de moedas e peixes enlatados.",
-  ["Encantamentos de Malangdo: dá para escolher a linha física, de longa distância ou mágica."],
-)
-const moedaA = drop(
-  "moeda-classe-a",
+  ["Encantamentos de Malangdo: dá para escolher a linha física, de longa distância ou mágica."], 6423)
+const moedaA = drop("moeda-classe-a",
   "Moeda Classe A",
   "Premiação do serviço no modo difícil.",
-  ["Também escolhe a linha do encanto em Malangdo. Moedas mais fracas sorteiam o encanto."],
-)
-const moedaB = drop(
-  "moedas-classe-b",
+  ["Também escolhe a linha do encanto em Malangdo. Moedas mais fracas sorteiam o encanto."], 6418)
+const moedaB = drop("moedas-classe-b",
   "Moedas Classe B",
   "Premiação do serviço no modo normal.",
-  ["Encanto aleatório nas armas aceitas em Malangdo."],
-)
+  ["Encanto aleatório nas armas aceitas em Malangdo."], 6419)
 const caixa = drop(
   "caixa-melhores-armas",
   "Caixa das Melhores Armas",
   "Premiação da caçada. O arpão é o item para conduzir a instância, não o drop.",
 )
-const poEspacial = drop(
-  "po-espacial",
+const poEspacial = drop("po-espacial",
   "Pó Espacial",
   "Item negociado na entrada do farol.",
-  ["Armas, armaduras ou encantos com o Pharos, na entrada do farol."],
-)
+  ["Armas, armaduras ou encantos com o Pharos, na entrada do farol."], 6905)
 const chifres = drop(
   "chifres-majestosos",
   "Chifres Majestosos",
@@ -46,18 +38,14 @@ const chifresG = drop(
 const boneco = drop("boneco-bafome", "Boneco de Bafomé Maldito", "Drop do Altar do Selo.")
 const cristalEsc = drop("cristal-escuridao", "Cristal da Escuridão", "Drop do Altar do Selo.")
 const fragEsc = drop("fragmento-escuridao", "Fragmento da Escuridão", "Drop do Altar do Selo.")
-const carta = drop(
-  "carta-dourada",
+const carta = drop("carta-dourada",
   "Carta Dourada",
   "Premiação da caçada aos Roborings, no fim da instância.",
-  ["50 cartas viram 1 Tanque Velho com o Dr. Magnatum, em Verus (verus04 79, 114)."],
-)
-const charleston = drop(
-  "componente-charleston",
+  ["50 cartas viram 1 Tanque Velho com o Dr. Magnatum, em Verus (verus04 79, 114)."], 25627)
+const charleston = drop("componente-charleston",
   "Componente de Charleston",
   "Material que também sai em Verus, ligado à mesma região.",
-  ["15 componentes viram combinadores com a Ingrata M (verus04 69, 108)."],
-)
+  ["15 componentes viram combinadores com a Ingrata M (verus04 69, 108)."], 6752)
 const petala = drop(
   "petala-invernal",
   "Pétala de Flor Invernal",
@@ -68,12 +56,10 @@ const minerio = drop(
   "Minério Mágico da Flor de Neve",
   "Sai junto da pétala na Batalha de Simulação e na Operação Destruição.",
 )
-const anelOrcs = drop(
-  "anel-orcs",
+const anelOrcs = drop("anel-orcs",
   "Anel dos Orcs",
   "O anel recebe 2 encantos, um de cada vez. A categoria é escolhida; o encanto específico, não.",
-  ["Cada encanto custa 100.000 zeny e 20 Presas de Orc. Sucesso de 100%. O reset só existe com os 2 slots preenchidos."],
-)
+  ["Cada encanto custa 100.000 zeny e 20 Presas de Orc. Sucesso de 100%. O reset só existe com os 2 slots preenchidos."], 28522)
 const amuleto = drop(
   "amuleto-menor",
   "Amuleto Menor",
@@ -92,19 +78,19 @@ const tatuBako = drop(
   "Os itens do Lago de Bakonawa são trocados no Festival de Pintados.",
   ["A tatuagem é o item final da troca."],
 )
-const marca = drop(
-  "marca-heroi",
+const marca = drop("marca-heroi",
   "Marca do Herói",
   "Moeda de Ilha Bios e da Caverna de Mors. A ilha também solta caixas e peças heroicas.",
   [
     "30 marcas viram 1 Anel Heroico com a Negociante Especial, na Caverna de Fogo.",
     "O Encantador Byrnes encanta o anel de graça. Resetar custa 3 marcas.",
-  ],
-)
+  ], 6684)
 const pele = drop(
   "pele-rainha-verme",
   "Pele da Rainha Verme",
   "Cada baú entrega 1 pele já com refino e encantos aleatórios. O 3º slot define o super encanto do 2º.",
+  [],
+  20717,
 )
 const vale = drop(
   "vale-varmida",
@@ -120,12 +106,10 @@ const bioarma = drop(
   ["Lavian, em Juno (yuno 220, 352), coloca até 2 encantos. Parte das armas não aceita encanto."],
 )
 const fragSonho = drop("fragmento-sonho", "Fragmento de Sonho", "Premiação da Edda do Quarto Crescente.")
-const moedaSang = drop(
-  "moeda-sangrenta",
+const moedaSang = drop("moeda-sangrenta",
   "Moeda Sangrenta",
   "Premiação da Fábrica do Terror e da Fábrica Infantil. Baús ainda podem deixar caixas e chapelaria antiga.",
-  ["Trocada pelos itens natalinos de Lutie."],
-)
+  ["Trocada pelos itens natalinos de Lutie."], 7642)
 const brasao = drop("brasao-honra", "Brasão de Honra", "Premiação da operação militar em Terra Gloria.")
 const mana = drop("mana-coagulada", "Mana Coagulada", "Premiação de Maldição de Glastheim e de Glastheim Infantil.")
 const cristalTempo = drop("cristal-tempo", "Cristal do Tempo", "Sai na Maldição de Glastheim, junto da mana.")
@@ -135,12 +119,10 @@ const ametista = drop(
   "Premiação da Mansão da Desilusão e da Purificação do Santuário. O santuário paga um lote de fragmentos.",
 )
 const chave = drop("chave-mansao", "Chave da Mansão", "Premiação ao clicar no altar, depois da batalha.")
-const mineas = drop(
-  "mineas",
+const mineas = drop("mineas",
   "Mineas",
   "O Marquês paga em Mineas depois de Sakray.",
-  ["O NPC troca Mineas por armas Paenitentia. O Paenitentia Aegis não pode ser encantado."],
-)
+  ["O NPC troca Mineas por armas Paenitentia. O Paenitentia Aegis não pode ser encantado."], 1000367)
 const armaDanif = drop(
   "arma-danificada",
   "Arma Danificada",
@@ -159,65 +141,53 @@ const chip = drop(
   "Recompensa aleatória do Memorial COR e da Missão OS.",
   ["Trocado por Equipamentos Ilusión."],
 )
-const cinzas = drop(
-  "fragmento-cinzas",
+const cinzas = drop("fragmento-cinzas",
   "Fragmento de Cinzas",
   "O Rei troca os fragmentos por equipamento, e a Viajante das Dimensões repete a troca fora da instância (dali02 51, 130).",
-  ["Armas e peças de Cinzas: botas, capa, armadura, manto, escudo, elmo, lanças, punho, violino, chicote, adaga, espadas, machado, katar e cajados."],
-)
+  ["Armas e peças de Cinzas: botas, capa, armadura, manto, escudo, elmo, lanças, punho, violino, chicote, adaga, espadas, machado, katar e cajados."], 6672)
 const cristalCorr = drop(
   "cristal-corrompido",
   "Cristal Corrompido",
   "Oscar entrega a recompensa depois do MVP.",
   ["Usado nas Máquinas do Oscar, na linha Edda de Glastheim."],
 )
-const peca = drop(
-  "peca-intacta",
+const peca = drop("peca-intacta",
   "Peça Intacta",
   "Premiação da Sala Final.",
-  ["Fruit troca 17 peças por equipamentos. A lista completa está na bROWiki."],
-)
+  ["Fruit troca 17 peças por equipamentos. A lista completa está na bROWiki."], 6827)
 const marcaHonra = drop("marca-honra", "Marca de Honra", "Entregue por Friedrich S. Heine ao sair do Salão de Ymir.")
-const dente = drop(
-  "dente-marfim",
+const dente = drop("dente-marfim",
   "Dente de Marfim",
   "A página atual usa este nome. O compilado antigo citava Dente de Jitterbug.",
-  ["Igu troca 50 dentes por 1 item aleatório: peitorais, braceletes, anéis, pingentes, arcos, microfone, fita, ukulele ou contrabaixo."],
-)
+  ["Igu troca 50 dentes por 1 item aleatório: peitorais, braceletes, anéis, pingentes, arcos, microfone, fita, ukulele ou contrabaixo."], 6719)
 const premio = drop(
   "premio-esquadrao",
   "Prêmio de Esquadrão",
   "1 prêmio com o Ajudante Abidal ou com a Hisie, conforme a missão aceita.",
+  [],
+  22567,
 )
-const moedaMag = drop(
-  "moeda-magica-geffen",
+const moedaMag = drop("moeda-magica-geffen",
   "Moeda Mágica de Geffen",
   "O Guia do Torneio paga ao fim de cada partida.",
-  ["A Negociante de dentro troca as moedas por encantadores, refletor, enciclopédia, anéis de reforço, traje e manto. Cada encantador custa 100 moedas."],
-)
+  ["A Negociante de dentro troca as moedas por encantadores, refletor, enciclopédia, anéis de reforço, traje e manto. Cada encantador custa 100 moedas."], 6671)
 const esconj = drop(
   "arma-esconjurante",
   "Arma Esconjurante",
   "Maça, arco, katar, espada, punhal ou cajado. Já vem entre +1 e +12, com encanto aleatório.",
 )
-const cebolinha = drop(
-  "cebolinha",
+const cebolinha = drop("cebolinha",
   "Cebolinha",
   "Vegetal da Vila dos Porings. Recebe 1 encanto aleatório.",
-  ["Encantar ou resetar custa 20.000 zeny e 50 Jellopy, com 70% de sucesso."],
-)
-const cenourinha = drop(
-  "cenourinha",
+  ["Encantar ou resetar custa 20.000 zeny e 50 Jellopy, com 70% de sucesso."], 19238)
+const cenourinha = drop("cenourinha",
   "Cenourinha",
   "Vegetal da Vila dos Porings. Recebe 1 encanto aleatório.",
-  ["Encantar ou resetar custa 20.000 zeny e 50 Jellopy, com 70% de sucesso."],
-)
-const moedaNoite = drop(
-  "moeda-noturna",
+  ["Encantar ou resetar custa 20.000 zeny e 50 Jellopy, com 70% de sucesso."], 19239)
+const moedaNoite = drop("moeda-noturna",
   "Moeda Noturna de Geffen",
   "A recompensa só entra se a rodada terminar e você desistir. Quanto mais longe, maior o prêmio.",
-  ["A Máquina Abandonada (dali 79, 60) troca a moeda por equipamentos, adornos e cartas noturnas."],
-)
+  ["A Máquina Abandonada (dali 79, 60) troca a moeda por equipamentos, adornos e cartas noturnas."], 1000316)
 const sobrenatural = drop(
   "arma-sobrenatural",
   "Arma Sobrenatural",
@@ -258,35 +228,31 @@ const bota = drop(
   "Bota Desconhecida",
   "Uma bota entre FOR, DES, VIT, INT, AGI e SOR.",
 )
-const fragMeteoro = drop(
-  "fragmento-meteorito",
+const fragMeteoro = drop("fragmento-meteorito",
   "Fragmento de Meteorito",
   "A premiação grossa vem da soma dos atributos, não do clique no MVP.",
   [
     "Trocado nas Máquinas do Oscar, em Alberta (203, 75), por pós, vestes, armaduras e sinetes.",
     "Encantar o 4º slot na OSC0008 custa 5 fragmentos e 300.000 zeny. O 3º slot custa 10 fragmentos e 500.000 zeny.",
-  ],
-)
+  ], 1000373)
 const poMeteoro = drop(
   "po-meteorito",
   "Pó de Meteorito",
   "Variação da premiação da Torre da Constelação: Poder, Estamina, Concentração, Criatividade, Feitiço ou Sabedoria.",
   ["As vestes, armaduras e sinetes nebulosos saem dessa troca."],
 )
-const alma = drop("alma-naght", "Alma de Naght Sieger", "1 alma ao eliminar o MVP. O restante da premiação vem da pontuação.")
+const alma = drop("alma-naght", "Alma de Naght Sieger", "1 alma ao eliminar o MVP. O restante da premiação vem da pontuação.", [], 1000396)
 const pocaoExp = drop("pocao-exp", "Poção Menor de EXP", "Recompensa atual da Cripta. O compilado antigo citava Embalagem de Poções.")
 const pocaoClasse = drop("pocao-classe", "Poção Menor de Classe", "Recompensa atual da Cripta, junto da poção de experiência.")
 const cristalTemporal = drop("cristal-temporal", "Cristal Temporal", "Sai em Glastheim Infantil, junto da Mana Coagulada.")
-const gigantes = drop(
-  "fragmento-gigantes",
+const gigantes = drop("fragmento-gigantes",
   "Fragmento de Gigantes",
   "O NPC vende os brincos e encanta os dois lados com listas diferentes.",
   [
     "1 fragmento compra 1 Brinco de Locomoção ou de Regeneração.",
     "Encantar custa 4 fragmentos. O brinco aceita 2 encantos, um por vez.",
     "Resetar custa 1 fragmento.",
-  ],
-)
+  ], 6803)
 const pedra = drop(
   "pedra-bruta",
   "Pedra Bruta",
@@ -295,6 +261,7 @@ const pedra = drop(
     "O Homem Suspeito encanta o Anel do Monarca em 2 slots. A categoria é escolhida. O reset, com os 2 slots cheios, tem 20% de chance de destruir o anel.",
     "A Colecionadora encanta 1 slot aleatório de acessórios comuns, como anéis, brincos, broches e luvas listados na bROWiki.",
   ],
+  25235,
 )
 
 function inst(

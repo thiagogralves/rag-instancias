@@ -2,6 +2,11 @@ import type { Person } from "./types"
 
 const ZONE = "America/Sao_Paulo"
 
+export const NAMES: Record<Person, string> = {
+  thiago: "Thiago",
+  rafael: "Raphael",
+}
+
 export function personFromEmail(email: string): Person | null {
   const value = email.trim().toLowerCase()
   if (value === "thiagogralves@gmail.com") return "thiago"
@@ -9,8 +14,8 @@ export function personFromEmail(email: string): Person | null {
   return null
 }
 
-export function roleLabel(person: Person, viewer: Person) {
-  return person === viewer ? "Você" : "Parceiro"
+export function roleLabel(person: Person) {
+  return NAMES[person]
 }
 
 export function formatClock(ms: number) {

@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { clearEmail, loadState, sendOp, storedEmail, storeEmail } from "./api"
+import Aurora from "./bits/Aurora"
+import BlurText from "./bits/BlurText/BlurText"
 import { Dashboard } from "./Dashboard"
+import { CHARACTERS, itemIcon } from "./characters"
 import { INSTANCES, SHARED_DROPS } from "./data"
-import { elapsedMs, formatClock, formatDuration, formatWhen, formatZeny, personFromEmail, roleLabel } from "./format"
-import type { GameState, Op, Person } from "./types"
+import { elapsedMs, formatClock, formatDuration, formatWhen, formatZeny, NAMES, personFromEmail, roleLabel } from "./format"
+import type { Drop, GameState, Op, Person } from "./types"
 
 type FilterId = "all" | "watch" | "pending" | "horas" | "diario" | "tres" | "semanal"
 
@@ -55,12 +58,14 @@ function PriceField({ id, price, onSave }: { id: string; price: number; onSave: 
 
   const numeric = Number(text || 0)
   return (
-    <label className="price">
-      <span>Preço em zeny</span>
+    <label className="price-mini">
+      <span className="sr">Preço em zeny</span>
       <input
         inputMode="numeric"
         autoComplete="off"
+        placeholder="zeny"
         value={text}
+        title={SHARED_DROPS.has(id) ? "Preço único em todas as instâncias deste item" : "Preço em zeny"}
         onFocus={() => {
           focused.current = true
         }}
@@ -70,9 +75,24 @@ function PriceField({ id, price, onSave }: { id: string; price: number; onSave: 
         }}
         onChange={(event) => setText(event.target.value.replace(/\D/g, "").slice(0, 15))}
       />
-      {numeric > 0 && <em className="hint">{formatZeny(numeric)} z</em>}
-      {SHARED_DROPS.has(id) && <em className="hint">Preço único: vale nas outras instâncias com este item.</em>}
+      {numeric > 0 && <em>{formatZeny(numeric)}</em>}
     </label>
+  )
+}
+
+function DropRow({ drop, price, onSave }: { drop: Drop; price: number; onSave: (value: number) => void }) {
+  const icon = itemIcon(drop.itemId)
+  return (
+    <div className="drop-row">
+      <div className="drop-icon" aria-hidden="true">
+        {icon ? <img src={icon} alt="" loading="lazy" width={24} height={24} onError={(event) => { event.currentTarget.style.display = "none" }} /> : <span>◆</span>}
+      </div>
+      <div className="drop-copy">
+        <strong>{drop.name}</strong>
+        <span>{drop.crafts[0] || drop.detail}</span>
+      </div>
+      <PriceField id={drop.id} price={price} onSave={onSave} />
+    </div>
   )
 }
 
@@ -87,7 +107,6 @@ export function App() {
   const [filter, setFilter] = useState<FilterId>("all")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
-  const [open, setOpen] = useState<string | null>(null)
   const [banner, setBanner] = useState("")
   const [status, setStatus] = useState("")
   const [loginError, setLoginError] = useState("")
@@ -252,18 +271,24 @@ export function App() {
 
   if (phase === "anon" || !user || !state) {
     return (
-      <main className="gate">
-        <section className="gate-visual" aria-hidden="true" style={{ backgroundImage: "url(/art/login-hero.jpg)" }}>
-          <img src="/art/login-hero.jpg" alt="" />
-          <div className="gate-copy">
-            <p>Portais, runas e o ritmo das corridas. Um board privado para a party.</p>
-          </div>
-        </section>
+      <main className="gate gate-solo">
+        <div className="fx-aurora" aria-hidden="true">
+          <Aurora
+            colorStops={["#4ef0d3", "#7ad7ff", "#9b8cff"]}
+            amplitude={0.85}
+            blend={0.55}
+            speed={0.7}
+            height={1.1}
+            opacity={0.55}
+            mouseInteraction={false}
+          />
+        </div>
+        <div className="noise" aria-hidden="true" />
         <section className="gate-panel">
           <form className="gate-card" onSubmit={enter}>
             <div className="gate-kicker">board privado</div>
             <h1>
-              <span>RUNE</span>
+              <BlurText text="RUNE" className="shine" animateBy="letters" direction="top" delay={40} trigger="load" />
             </h1>
             <p className="lede">Instâncias, drops, preços e tempo. Entra com o Gmail autorizado.</p>
             <label htmlFor="email">Gmail</label>
@@ -288,21 +313,43 @@ export function App() {
     )
   }
 
-  const partner: Person = user === "thiago" ? "rafael" : "thiago"
+  const other: Person = user === "thiago" ? "rafael" : "thiago"
   const filterLabel = FILTERS.find((item) => item.id === filter)?.label || "Todas"
   const mine = state.history.filter((event) => event.user === user).length
   const people: Person[] = user === "thiago" ? ["thiago", "rafael"] : ["rafael", "thiago"]
+  const me = CHARACTERS[user]
 
   return (
     <>
       <a className="skip" href="#conteudo">Ir para o conteúdo</a>
       <span className="sr" aria-live="polite">{status}</span>
+      <div className="fx-aurora soft" aria-hidden="true">
+        <Aurora
+          colorStops={user === "thiago" ? ["#4ef0d3", "#7ad7ff", "#9b8cff"] : ["#ffb4c8", "#9b8cff", "#7ad7ff"]}
+          amplitude={0.7}
+          blend={0.5}
+          speed={0.55}
+          height={0.95}
+          opacity={0.28}
+          mouseInteraction={false}
+        />
+      </div>
+      <div className="noise" aria-hidden="true" />
       <div className="shell">
-        <header className="hero" style={{ backgroundImage: "url(/art/world-map.jpg)" }}>
-          <img src="/art/world-map.jpg" alt="" />
-          <div className="hero-copy">
-            <h1>RUNE</h1>
+        <header className="stage">
+          <div className="stage-copy">
+            <p className="gate-kicker">party board</p>
+            <h1 className="shine">RUNE</h1>
             <p>Board de instâncias com drops, crafts, selos e cronômetro compartilhado.</p>
+            <div className="stage-jobs single">
+              <article style={{ ["--job-accent" as string]: me.accent }}>
+                <strong>{NAMES[user]} · {me.job}</strong>
+                <span>{me.title}</span>
+              </article>
+            </div>
+          </div>
+          <div className="stage-art solo">
+            <img className="floaty me char-cut" src={me.image} alt={`${NAMES[user]} · ${me.job}`} />
           </div>
         </header>
 
@@ -412,7 +459,9 @@ export function App() {
                             </p>
                             <p className="prize">Premiação <b>{item.premiacao}</b></p>
                             <a className="wiki" href={item.url} target="_blank" rel="noreferrer">Abrir na bROWiki</a>
-                            {state.watch[partner].includes(item.id) && <p className="also">Parceiro também marcou prioridade</p>}
+                            {state.watch[other].includes(item.id) && (
+                              <p className="also">{roleLabel(other)} também marcou prioridade</p>
+                            )}
                           </div>
                           <div className="actions">
                             {people.map((person) => {
@@ -420,25 +469,25 @@ export function App() {
                               return (
                                 <button
                                   key={person}
-                                  className={`seal ${mineSeal ? "you" : "partner"}`}
+                                  className={`seal ${mineSeal ? "you" : "other"}`}
                                   type="button"
                                   aria-pressed={Boolean(done[person])}
                                   onClick={() => void act(
                                     item.id + person,
                                     { op: "toggleDone", instanceId: item.id },
-                                    done[person] ? `Selo de ${roleLabel(person, user)} removido em ${item.name}.` : `${item.name} concluída (${roleLabel(person, user)}).`,
+                                    done[person] ? `Selo de ${roleLabel(person)} removido em ${item.name}.` : `${item.name} concluída (${roleLabel(person)}).`,
                                   )}
                                 >
-                                  <i>{mineSeal ? "V" : "P"}</i>
+                                  <i>{NAMES[person].slice(0, 1)}</i>
                                   <span>
-                                    {roleLabel(person, user)}
+                                    {roleLabel(person)}
                                     <small>{done[person] ? formatWhen(done[person]!) : mineSeal ? "seu selo" : "selo"}</small>
                                   </span>
                                 </button>
                               )
                             })}
                             <button
-                              className={`timer${active ? " on" : ""}`}
+                              className={`timer${active ? " on pulse-ring" : ""}`}
                               type="button"
                               onClick={() => void act(
                                 item.id + "timer",
@@ -449,43 +498,38 @@ export function App() {
                               <span>{active ? "Parar" : "Iniciar"}</span>
                               <b className="clock">{active ? formatClock(live) : "0:00"}</b>
                             </button>
-                            {active && <p className="last">{roleLabel(active.user, user)} está nesta instância.{live > 8 * 60 * 60 * 1000 ? " Passou de 8h; ao parar, conto só o teto." : ""}</p>}
-                            {!active && last && <p className="last">Última: {formatDuration(last.ms)} · {roleLabel(last.user, user)}{last.capped ? " · teto de 8h" : ""}</p>}
-                            <button className="more" type="button" aria-expanded={open === item.id} aria-controls={`drops-${item.id}`} onClick={() => setOpen(open === item.id ? null : item.id)}>
-                              {open === item.id ? "Fechar drops" : "Drops e craft"}
-                            </button>
+                            {active && <p className="last">{roleLabel(active.user)} está nesta instância.{live > 8 * 60 * 60 * 1000 ? " Passou de 8h; ao parar, conto só o teto." : ""}</p>}
+                            {!active && last && <p className="last">Última: {formatDuration(last.ms)} · {roleLabel(last.user)}{last.capped ? " · teto de 8h" : ""}</p>}
                           </div>
                         </div>
-                        {open === item.id && (
-                          <div className="drops" id={`drops-${item.id}`}>
-                            {item.blurb && <p className="blurb">{item.blurb}</p>}
-                            {item.drops.length === 0 && <p className="blurb">Esta instância não tem item de craft para precificar.</p>}
-                            {item.drops.map((drop) => (
-                              <section className="drop" key={drop.id}>
-                                <h3>{drop.name}</h3>
-                                <p>{drop.detail}</p>
-                                {drop.crafts.length > 0 && (
-                                  <ul className="craft">
-                                    {drop.crafts.map((craft) => <li key={craft}>{craft}</li>)}
-                                  </ul>
-                                )}
-                                <PriceField id={drop.id} price={state.prices[drop.id] || 0} onSave={(value) => void act(drop.id + "price", { op: "setPrice", dropId: drop.id, price: value }, `Preço de ${drop.name} atualizado.`)} />
-                              </section>
-                            ))}
-                          </div>
-                        )}
+                        <div className="drops" id={`drops-${item.id}`}>
+                          {item.blurb && <p className="blurb">{item.blurb}</p>}
+                          {item.drops.length === 0 ? (
+                            <p className="blurb">Sem item de craft para precificar.</p>
+                          ) : (
+                            item.drops.map((drop) => (
+                              <DropRow
+                                key={drop.id}
+                                drop={drop}
+                                price={state.prices[drop.id] || 0}
+                                onSave={(value) => void act(drop.id + "price", { op: "setPrice", dropId: drop.id, price: value }, `Preço de ${drop.name} atualizado.`)}
+                              />
+                            ))
+                          )}
+                        </div>
                       </article>
                     )
                   })}
                 </div>
               </div>
 
-              <aside className="side" aria-label="Arte">
-                <div className="side-card">
-                  <img src="/art/panel-warrior.jpg" alt="Aventureira com lâmina rúnica, arte original do board" />
+              <aside className="side" aria-label="Personagem">
+                <div className="side-card char-card" style={{ ["--job-accent" as string]: me.accent }}>
+                  <img className="floaty char-cut" src={me.image} alt={`${NAMES[user]} · ${me.job}`} />
                   <div className="cap">
-                    <h2>Corridas sincronizadas</h2>
-                    <p>Selos, preços e cronômetros ficam na mesma crônica para a party toda.</p>
+                    <p className="gate-kicker">{NAMES[user]}</p>
+                    <h2>{me.job}</h2>
+                    <p>{me.title}</p>
                   </div>
                 </div>
               </aside>
@@ -502,7 +546,7 @@ export function App() {
               <article key={item.id}>
                 <p>
                   <strong>{item.name}</strong>
-                  <small className="clock"> · {formatClock(live)} · {roleLabel(item.active.user, user)}</small>
+                  <small className="clock"> · {formatClock(live)} · {roleLabel(item.active.user)}</small>
                 </p>
                 <button type="button" onClick={() => void act(item.id + "stop", { op: "timerStop", instanceId: item.id }, `Cronômetro de ${item.name} parado.`)}>Parar</button>
               </article>
