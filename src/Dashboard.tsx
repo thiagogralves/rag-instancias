@@ -13,7 +13,22 @@ import {
 } from "recharts"
 import { INSTANCES } from "./data"
 import { dayKey, formatDuration, formatWhen, formatZeny, roleLabel } from "./format"
+import { RO } from "./ro"
 import type { GameState, Person, SectionId } from "./types"
+
+function Pixel({ src, size = 18 }: { src: string; size?: number }) {
+  return (
+    <img
+      className="pixel-icon"
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+      decoding="async"
+    />
+  )
+}
 
 const SECTIONS: { id: SectionId; label: string }[] = [
   { id: "horas", label: "Horas" },
@@ -149,6 +164,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
           ] as const
         ).map(([id, label]) => (
           <button key={id} type="button" role="radio" aria-checked={range === id} onClick={() => setRange(id)}>
+            <Pixel src={id === "all" ? RO.poring : RO.butterflyWing} size={16} />
             {label}
           </button>
         ))}
@@ -156,25 +172,25 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
 
       <section className="kpis" aria-label="Indicadores">
         <article className="kpi you">
-          <span>Conclusões</span>
+          <span><Pixel src={RO.yggBerry} size={14} /> Conclusões</span>
           <strong>{view.counts[viewer]}</strong>
           <em>{youKey}</em>
           <p className="fine">{money(view.zeny[viewer])}</p>
         </article>
         <article className="kpi other">
-          <span>Conclusões</span>
+          <span><Pixel src={RO.yggBerry} size={14} /> Conclusões</span>
           <strong>{view.counts[other]}</strong>
           <em>{otherKey}</em>
           <p className="fine">{money(view.zeny[other])}</p>
         </article>
         <article className="kpi you">
-          <span>Tempo</span>
+          <span><Pixel src={RO.flyWing} size={14} /> Tempo</span>
           <strong>{formatDuration(view.time[viewer])}</strong>
           <em>{youKey}</em>
           <p className="fine">cronômetros parados e o que ainda roda</p>
         </article>
         <article className="kpi other">
-          <span>Tempo</span>
+          <span><Pixel src={RO.flyWing} size={14} /> Tempo</span>
           <strong>{formatDuration(view.time[other])}</strong>
           <em>{otherKey}</em>
           <p className="fine">cronômetros parados e o que ainda roda</p>
@@ -182,12 +198,13 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
       </section>
 
       {!hasWork ? (
-        <div className="empty">
+        <div className="empty ro-window">
+          <Pixel src={RO.poring} size={40} />
           <p>Quando alguém selar uma instância ou parar um cronômetro, os gráficos aparecem aqui.</p>
         </div>
       ) : (
         <>
-          <section className="panel">
+          <section className="panel ro-window">
             <h2>Conclusões por ritmo</h2>
             <p className="fine">Cada selo novo conta uma conclusão. Tirar o selo não apaga o histórico.</p>
             <div className="chart">
@@ -205,7 +222,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
             </div>
           </section>
 
-          <section className="panel">
+          <section className="panel ro-window">
             <h2>Conclusões por dia</h2>
             <p className="fine">{range === "7" ? "Últimos 7 dias." : "Últimos 30 dias."}</p>
             <div className="chart">
@@ -224,7 +241,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
           </section>
 
           {view.slow.length > 0 && (
-            <section className="panel">
+            <section className="panel ro-window">
               <h2>Onde o tempo vai</h2>
               <p className="fine">Média em minutos das corridas cronometradas.</p>
               <div className="chart">
@@ -241,7 +258,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
             </section>
           )}
 
-          <section className="panel">
+          <section className="panel ro-window">
             <h2>Últimas corridas</h2>
             {view.runs.length === 0 ? (
               <p className="fine">Nenhum cronômetro parado neste período.</p>
@@ -263,7 +280,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
             )}
           </section>
 
-          <section className="panel">
+          <section className="panel ro-window">
             <div className="table-wrap">
               <table>
                 <caption>Livro do período</caption>

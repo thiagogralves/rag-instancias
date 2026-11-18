@@ -1,34 +1,53 @@
-.fx-aurora {
+.fx-layer {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
 }
-.fx-aurora.soft {
-  opacity: 0.9;
-  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+.fx-layer.soft {
+  opacity: 0.95;
+  mask-image: linear-gradient(180deg, #000 0%, #000 50%, transparent 100%);
 }
+.fx-rays { opacity: 0.7; }
+.fx-particles { z-index: 0; }
+.fx-aurora { z-index: 0; }
+
+.midgard-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 40% at 50% 0%, rgba(122, 215, 255, 0.08), transparent 60%),
+    url("/art/dungeon-bio.jpg") center/cover;
+  opacity: 0.07;
+  mix-blend-mode: soft-light;
+}
+
 .noise {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.045;
+  opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   mix-blend-mode: soft-light;
 }
+
 .shine {
-  background: linear-gradient(110deg, #fff 20%, var(--cyan) 45%, var(--violet) 70%, #fff 90%);
+  background: linear-gradient(110deg, #fff 20%, var(--cyan) 45%, var(--violet) 70%, var(--gold) 90%);
   background-size: 220% auto;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   animation: shine 6s linear infinite;
 }
+
 .floaty {
   animation: floaty 5.5s var(--ease) infinite;
 }
+
 .pulse-ring {
   position: relative;
 }
@@ -37,10 +56,11 @@
   position: absolute;
   inset: -4px;
   border-radius: inherit;
-  border: 1px solid rgba(78, 240, 211, 0.45);
+  border: 1px solid rgba(255, 107, 138, 0.45);
   animation: ping 1.8s var(--ease) infinite;
   pointer-events: none;
 }
+
 .card {
   animation: rise 520ms var(--ease) both;
 }
@@ -50,28 +70,23 @@
 .card:nth-child(4) { animation-delay: 160ms; }
 .card:nth-child(5) { animation-delay: 200ms; }
 
-@keyframes drift {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(6%, 8%, 0) scale(1.12); }
-}
 @keyframes shine {
   to { background-position: 220% center; }
 }
 @keyframes floaty {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-8px); }
 }
 @keyframes ping {
-  0% { opacity: 0.7; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.08); }
+  0% { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); }
 }
 @keyframes rise {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora span, .shine, .floaty, .pulse-ring::after, .card {
-    animation: none !important;
-  }
+  .shine, .floaty, .pulse-ring::after, .card { animation: none; }
+  .fx-layer { display: none; }
 }

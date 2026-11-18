@@ -2,6 +2,8 @@
 panel-warrior.jpg — original character panel
 world-map.jpg — original Midgard-inspired map banner
 dungeon-bio.jpg — original dungeon atmosphere for the board
-char-magus.jpg — Magus (4th mage class) for one party member
-char-cardinal.jpg — Cardinal / Cardeal (4th cleric class) for the partner
-Item icons load from Divine-Pride CDN when item IDs are known.
+char-magus.jpg — Magus (4th mage class) for Thiago
+char-cardinal.jpg — Cardinal / Cardeal (4th cleric class) for Raphael
+
+Item icons and monster sprites under /public/ro and live item rows load from Divine-Pride CDN
+(https://static.divine-pride.net) — classic Ragnarok Online assets for reference UI.
