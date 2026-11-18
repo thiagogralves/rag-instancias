@@ -1,9 +1,10 @@
-﻿login-hero.jpg — original atmosphere art for the gate
-panel-warrior.jpg — original character panel
-world-map.jpg — original Midgard-inspired map banner
-dungeon-bio.jpg — original dungeon atmosphere for the board
-char-magus.jpg — Magus (4th mage class) for Thiago
-char-cardinal.jpg — Cardinal / Cardeal (4th cleric class) for Raphael
+﻿world-map.jpg — classic Midgard continent map (from Ragnarök Wiki / Gravity RO community archive: MidgardMap(old).jpg)
+midgard-classic.jpg — same source, full resolution
+midgard-official.jpg — RO MidgardMap.jpg (wiki archive)
+midgard-world.jpg — Midgard(World).jpg (wiki archive)
+midgard-worldmap.jpg — illustrative Midgard banner (generated stand-in; not used as primary)
 
-Item icons and monster sprites under /public/ro and live item rows load from Divine-Pride CDN
-(https://static.divine-pride.net) — classic Ragnarok Online assets for reference UI.
+login-hero.jpg / dungeon-bio.jpg / panel-warrior.jpg — original atmosphere art
+char-magus.png / char-cardinal.png — Magus (Thiago) and Cardeal (Raphael), chroma-keyed PNG
+
+Item icons and monster sprites under /public/ro load from Divine-Pride CDN.

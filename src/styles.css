@@ -261,10 +261,11 @@ img { display: block; max-width: 100%; }
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(120deg, rgba(4, 8, 16, 0.82), rgba(8, 12, 24, 0.55)),
-    url("/art/world-map.jpg") center/cover;
-  opacity: 0.55;
+    linear-gradient(105deg, rgba(4, 8, 16, 0.78) 0%, rgba(4, 10, 20, 0.42) 42%, rgba(4, 8, 16, 0.55) 100%),
+    url("/art/world-map.jpg") center 35% / cover no-repeat;
+  opacity: 0.92;
   pointer-events: none;
+  filter: saturate(1.15) contrast(1.05);
 }
 .stage-copy { position: relative; z-index: 1; max-width: 36rem; }
 .stage-copy > p { margin: 12px 0 0; color: var(--muted); max-width: 44ch; }
@@ -341,8 +342,10 @@ img { display: block; max-width: 100%; }
 }
 .stage-glare { width: 100% !important; height: 100% !important; background: transparent !important; }
 .char-cut {
-  background: transparent;
-  mix-blend-mode: lighten;
+  background: transparent !important;
+  mix-blend-mode: normal;
+  -webkit-mask-image: linear-gradient(180deg, #000 88%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 88%, transparent 100%);
 }
 
 .topbar {
@@ -702,16 +705,18 @@ img { display: block; max-width: 100%; }
 }
 
 .char-card {
-  background: #05070d;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 78%, color-mix(in srgb, var(--job-accent, var(--cyan)) 18%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(10, 16, 30, 0.35), rgba(6, 10, 18, 0.75));
   border-color: color-mix(in srgb, var(--job-accent, var(--cyan)) 30%, transparent);
   overflow: hidden;
 }
 .char-card img {
   width: 100%;
-  height: 320px;
+  height: 340px;
   object-fit: contain;
   object-position: center bottom;
-  background: #05070d;
+  background: transparent;
 }
 .char-card .cap {
   padding: 14px 16px 18px;

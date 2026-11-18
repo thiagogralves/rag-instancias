@@ -8,7 +8,7 @@ export const CHARACTERS: Record<
   thiago: {
     job: "Magus",
     title: "4ª classe · linha do Mago",
-    image: "/art/char-magus.jpg",
+    image: "/art/char-magus.png",
     accent: "#4ef0d3",
     gem: RO.blueGem,
     motto: "Runas, portais e DPS mágico.",
@@ -16,7 +16,7 @@ export const CHARACTERS: Record<
   rafael: {
     job: "Cardeal",
     title: "4ª classe · linha do Clérigo",
-    image: "/art/char-cardinal.jpg",
+    image: "/art/char-cardinal.png",
     accent: "#ffb4c8",
     gem: RO.redGem,
     motto: "Curas, buffs e o ritmo da party.",
