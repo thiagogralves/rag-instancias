@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from "vite"
 import react from "@vitejs/plugin-react"
 import { handleState } from "./api/state.js"
+import itemsHandler from "./api/items.js"
 
 function readBody(req: NodeJS.ReadableStream) {
   return new Promise<string>((resolve, reject) => {
@@ -15,6 +16,29 @@ function ragApi(): Plugin {
   return {
     name: "rag-api",
     configureServer(server) {
+      server.middlewares.use("/api/items", (req, res) => {
+        const url = new URL(req.url || "", "http://localhost")
+        const fakeReq = {
+          method: req.method || "GET",
+          query: Object.fromEntries(url.searchParams.entries()),
+        }
+        const fakeRes = {
+          statusCode: 200,
+          setHeader(name: string, value: string) {
+            res.setHeader(name, value)
+          },
+          status(code: number) {
+            this.statusCode = code
+            return this
+          },
+          json(data: unknown) {
+            res.statusCode = this.statusCode
+            res.setHeader("content-type", "application/json; charset=utf-8")
+            res.end(JSON.stringify(data))
+          },
+        }
+        void itemsHandler(fakeReq as never, fakeRes as never)
+      })
       server.middlewares.use("/api/state", (req, res) => {
         void (async () => {
           try {

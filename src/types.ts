@@ -48,6 +48,38 @@ export type ActiveTimer = {
   user: Person
 }
 
+export type LootEntry = {
+  id: string
+  source: "instance" | "farm"
+  user: Person
+  itemName: string
+  itemId?: number
+  dropId?: string
+  instanceId?: string
+  location?: string
+  qty: number
+  price: number
+  at: string
+  day: string
+}
+
+export type FarmSession = {
+  id: string
+  location: string
+  user: Person
+  ms: number
+  at: string
+  startedAt: number
+  capped?: boolean
+}
+
+export type ActiveFarm = {
+  startedAt: number
+  elapsedMs: number
+  user: Person
+  location: string
+}
+
 export type GameState = {
   version: number
   completions: Record<string, Partial<Record<Person, string>>>
@@ -56,6 +88,9 @@ export type GameState = {
   active: Record<string, ActiveTimer>
   prices: Record<string, number>
   watch: Record<Person, string[]>
+  loot: LootEntry[]
+  farmSessions: FarmSession[]
+  activeFarm: ActiveFarm | null
 }
 
 export type Op =
@@ -65,3 +100,17 @@ export type Op =
   | { op: "timerStart"; instanceId: string }
   | { op: "timerStop"; instanceId: string }
   | { op: "setPrice"; dropId: string; price: number }
+  | { op: "upsertDailyLoot"; dropId: string; instanceId: string; itemName: string; itemId?: number; qty: number; price: number; at?: string }
+  | { op: "addFarmLoot"; itemName: string; itemId?: number; qty: number; price: number; location?: string; at?: string }
+  | { op: "deleteHistory"; ids: string[] }
+  | { op: "deleteRuns"; ids: string[] }
+  | { op: "deleteLoot"; ids: string[] }
+  | { op: "deleteFarmSessions"; ids: string[] }
+  | { op: "farmTimerStart"; location: string }
+  | { op: "farmTimerStop" }
+  | { op: "clearHistory" }
+
+export type CatalogItem = {
+  id: number
+  name: string
+}

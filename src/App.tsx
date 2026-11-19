@@ -8,13 +8,17 @@ import GooeyNav from "./bits/GooeyNav"
 import ShinyText from "./bits/ShinyText"
 import { BoardFx, GateFx } from "./FxLayer"
 import { Dashboard } from "./Dashboard"
+import { Farm } from "./Farm"
+import { WikiModal } from "./WikiModal"
 import { CHARACTERS, itemIcon } from "./characters"
 import { INSTANCES, SHARED_DROPS } from "./data"
-import { elapsedMs, formatClock, formatDuration, formatWhen, formatZeny, NAMES, personFromEmail, roleLabel } from "./format"
+import { dayKey, elapsedMs, formatClock, formatDuration, formatWhen, formatZeny, NAMES, personFromEmail, roleLabel } from "./format"
+import { resolveDropItemId } from "./itemIds"
 import { FILTER_ICON, RO, SECTION_ICON } from "./ro"
 import type { Drop, GameState, Op, Person } from "./types"
 
 type FilterId = "all" | "watch" | "pending" | "horas" | "diario" | "tres" | "semanal"
+type TabId = "board" | "dash" | "farm"
 
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: "all", label: "Todas" },
@@ -28,8 +32,21 @@ const FILTERS: { id: FilterId; label: string }[] = [
 
 const NAV = [
   { label: "Instâncias" },
+  { label: "Farm" },
   { label: "Painel" },
 ]
+
+function tabFromIndex(index: number): TabId {
+  if (index === 1) return "farm"
+  if (index === 2) return "dash"
+  return "board"
+}
+
+function indexFromTab(tab: TabId) {
+  if (tab === "farm") return 1
+  if (tab === "dash") return 2
+  return 0
+}
 
 function norm(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "")
@@ -111,10 +128,27 @@ function PriceField({ id, price, onSave }: { id: string; price: number; onSave: 
   )
 }
 
-function DropRow({ drop, price, onSave }: { drop: Drop; price: number; onSave: (value: number) => void }) {
-  const icon = itemIcon(drop.itemId)
+function DropRow({
+  drop,
+  price,
+  qty,
+  onSavePrice,
+  onSaveQty,
+}: {
+  drop: Drop
+  price: number
+  qty: number
+  onSavePrice: (value: number) => void
+  onSaveQty: (value: number) => void
+}) {
+  const [qtyText, setQtyText] = useState(qty ? String(qty) : "")
+  const itemId = resolveDropItemId(drop.id, drop.itemId)
+  const icon = itemIcon(itemId)
+  useEffect(() => {
+    setQtyText(qty ? String(qty) : "")
+  }, [qty])
   return (
-    <div className="drop-row">
+    <div className="drop-row rich">
       <div className="drop-icon" aria-hidden="true">
         {icon ? <PixelIcon src={icon} size={24} /> : <PixelIcon src={RO.purpleBox} size={22} />}
       </div>
@@ -122,7 +156,18 @@ function DropRow({ drop, price, onSave }: { drop: Drop; price: number; onSave: (
         <strong>{drop.name}</strong>
         <span>{drop.crafts[0] || drop.detail}</span>
       </div>
-      <PriceField id={drop.id} price={price} onSave={onSave} />
+      <label className="qty-mini">
+        <span className="sr">Quantidade hoje</span>
+        <input
+          inputMode="numeric"
+          placeholder="qtd"
+          value={qtyText}
+          title="Quantidade dropada hoje (zera amanhã na lista)"
+          onChange={(event) => setQtyText(event.target.value.replace(/\D/g, "").slice(0, 8))}
+          onBlur={() => onSaveQty(Number(qtyText || 0))}
+        />
+      </label>
+      <PriceField id={drop.id} price={price} onSave={onSavePrice} />
     </div>
   )
 }
@@ -133,11 +178,16 @@ export function App() {
   const [phase, setPhase] = useState<"boot" | "anon" | "in">("boot")
   const [user, setUser] = useState<Person | null>(null)
   const [state, setState] = useState<GameState | null>(null)
-  const [tab, setTab] = useState<"board" | "dash">(() => (sessionStorage.getItem("rag-tab") === "dash" ? "dash" : "board"))
+  const [tab, setTab] = useState<TabId>(() => {
+    const saved = sessionStorage.getItem("rag-tab")
+    if (saved === "dash" || saved === "farm" || saved === "board") return saved
+    return "board"
+  })
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<FilterId>("all")
   const [confirmReset, setConfirmReset] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [wiki, setWiki] = useState<{ title: string; url: string } | null>(null)
   const [banner, setBanner] = useState("")
   const [status, setStatus] = useState("")
   const [loginError, setLoginError] = useState("")
@@ -213,17 +263,18 @@ export function App() {
   }, [activeCount])
 
   useEffect(() => {
-    document.body.style.overflow = confirmReset ? "hidden" : ""
+    document.body.style.overflow = confirmReset || wiki ? "hidden" : ""
     return () => {
       document.body.style.overflow = ""
     }
-  }, [confirmReset])
+  }, [confirmReset, wiki])
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setConfirmReset(false)
         setExpanded(null)
+        setWiki(null)
       }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault()
@@ -279,11 +330,13 @@ export function App() {
     }
   }
 
-  function selectTab(next: "board" | "dash") {
+  function selectTab(next: TabId) {
     setTab(next)
     sessionStorage.setItem("rag-tab", next)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
+
+  const todayKey = dayKey(new Date().toISOString())
 
   const filtered = useMemo(() => {
     if (!state || !user) return []
@@ -375,7 +428,7 @@ export function App() {
   const people: Person[] = user === "thiago" ? ["thiago", "rafael"] : ["rafael", "thiago"]
   const me = CHARACTERS[user]
   const progress = Math.round((doneMine / INSTANCES.length) * 100)
-  const navIndex = tab === "board" ? 0 : 1
+  const navIndex = indexFromTab(tab)
 
   return (
     <ClickSpark sparkColor={[me.accent, "#dafa9c", "#ffe08a"]} sparkCount={8} shape="star" glow={1.4}>
@@ -422,7 +475,7 @@ export function App() {
               <GooeyNav
                 items={NAV}
                 activeIndex={navIndex}
-                onChange={(index) => selectTab(index === 0 ? "board" : "dash")}
+                onChange={(index) => selectTab(tabFromIndex(index))}
                 theme="dark"
                 color="#dafa9c"
                 activeTextColor="#0f0f0f"
@@ -454,7 +507,9 @@ export function App() {
 
         <main id="conteudo">
           {tab === "dash" ? (
-            <Dashboard state={state} now={now} viewer={user} />
+            <Dashboard state={state} now={now} viewer={user} act={act} />
+          ) : tab === "farm" ? (
+            <Farm state={state} now={now} viewer={user} act={act} />
           ) : (
             <div className="board">
               <nav className="zones" aria-label="Filtros">
@@ -538,7 +593,15 @@ export function App() {
                               <span className="pill">Nv. {item.nivel}</span>
                               <span className="pill">{item.modo}</span>
                             </div>
-                            <h2>{item.name}</h2>
+                            <h2>
+                              <button
+                                type="button"
+                                className="wiki-link"
+                                onClick={() => setWiki({ title: item.name, url: item.url })}
+                              >
+                                {item.name}
+                              </button>
+                            </h2>
                           </div>
                         </div>
 
@@ -614,20 +677,39 @@ export function App() {
                             <div className="drops">
                               <div className="drops-head">
                                 <PixelIcon src={RO.goldCoin} size={14} />
-                                Drops & preços
+                                Drops de hoje · qtd + preço
                               </div>
                               {item.blurb && <p className="fine">{item.blurb}</p>}
                               {item.drops.length === 0 ? (
                                 <p className="fine">Sem item de craft para precificar.</p>
                               ) : (
-                                item.drops.map((drop) => (
-                                  <DropRow
-                                    key={drop.id}
-                                    drop={drop}
-                                    price={state.prices[drop.id] || 0}
-                                    onSave={(value) => void act(drop.id + "price", { op: "setPrice", dropId: drop.id, price: value }, `Preço de ${drop.name} atualizado.`)}
-                                  />
-                                ))
+                                item.drops.map((drop) => {
+                                  const todayLoot = (state.loot || []).find(
+                                    (row) => row.source === "instance" && row.user === user && row.dropId === drop.id && row.day === todayKey,
+                                  )
+                                  return (
+                                    <DropRow
+                                      key={drop.id}
+                                      drop={drop}
+                                      price={state.prices[drop.id] || todayLoot?.price || 0}
+                                      qty={todayLoot?.qty || 0}
+                                      onSavePrice={(value) => void act(drop.id + "price", { op: "setPrice", dropId: drop.id, price: value }, `Preço de ${drop.name} atualizado.`)}
+                                      onSaveQty={(value) => void act(
+                                        drop.id + "qty",
+                                        {
+                                          op: "upsertDailyLoot",
+                                          dropId: drop.id,
+                                          instanceId: item.id,
+                                          itemName: drop.name,
+                                          itemId: resolveDropItemId(drop.id, drop.itemId),
+                                          qty: value,
+                                          price: state.prices[drop.id] || 0,
+                                        },
+                                        value ? `Qtd de ${drop.name} hoje: ${value}.` : `Qtd de ${drop.name} zerada hoje.`,
+                                      )}
+                                    />
+                                  )
+                                })
                               )}
                             </div>
                           </div>
@@ -691,11 +773,17 @@ export function App() {
           <PixelIcon src={RO.butterflyWing} size={20} />
           Instâncias
         </button>
+        <button type="button" aria-current={tab === "farm" ? "page" : undefined} onClick={() => selectTab("farm")}>
+          <PixelIcon src={RO.yggBerry} size={20} />
+          Farm
+        </button>
         <button type="button" aria-current={tab === "dash" ? "page" : undefined} onClick={() => selectTab("dash")}>
           <PixelIcon src={RO.goldCoin} size={20} />
           Painel
         </button>
       </nav>
+
+      {wiki && <WikiModal title={wiki.title} url={wiki.url} onClose={() => setWiki(null)} />}
 
       {confirmReset && (
         <div className="sheet-root" role="dialog" aria-modal="true" aria-labelledby="reset-titulo">

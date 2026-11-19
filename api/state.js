@@ -8,6 +8,16 @@ const USERS = {
 
 const CAP_MS = 8 * 60 * 60 * 1000
 const FILE = path.join(process.cwd(), "data", "state.json")
+const ZONE = "America/Sao_Paulo"
+
+function dayKey(iso) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso))
+}
 
 function defaultState() {
   return {
@@ -18,6 +28,9 @@ function defaultState() {
     active: {},
     prices: {},
     watch: { thiago: [], rafael: [] },
+    loot: [],
+    farmSessions: [],
+    activeFarm: null,
   }
 }
 
@@ -35,12 +48,17 @@ function normalize(input) {
       thiago: Array.isArray(input.watch?.thiago) ? input.watch.thiago : [],
       rafael: Array.isArray(input.watch?.rafael) ? input.watch.rafael : [],
     },
+    loot: Array.isArray(input.loot) ? input.loot : [],
+    farmSessions: Array.isArray(input.farmSessions) ? input.farmSessions : [],
+    activeFarm: input.activeFarm && typeof input.activeFarm === "object" ? input.activeFarm : null,
   }
 }
 
 function trimState(state) {
   if (state.history.length > 1000) state.history = state.history.slice(-1000)
   if (state.runs.length > 1000) state.runs = state.runs.slice(-1000)
+  if (state.loot.length > 2000) state.loot = state.loot.slice(-2000)
+  if (state.farmSessions.length > 1000) state.farmSessions = state.farmSessions.slice(-1000)
 }
 
 function redisEnv() {
@@ -135,6 +153,23 @@ function validInstance(instanceId) {
   return typeof instanceId === "string" && /^inst_\d+$/.test(instanceId)
 }
 
+function cleanIds(ids) {
+  if (!Array.isArray(ids)) return []
+  return [...new Set(ids.filter((id) => typeof id === "string" && id.length > 0 && id.length < 80))]
+}
+
+function clampMoney(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n) || n < 0 || n > 1e15) return null
+  return Math.round(n)
+}
+
+function clampQty(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n) || n < 0 || n > 1e9) return null
+  return Math.round(n)
+}
+
 function apply(state, op, user) {
   if (!op || typeof op !== "object") return false
 
@@ -168,6 +203,11 @@ function apply(state, op, user) {
     return true
   }
 
+  if (op.op === "clearHistory") {
+    state.history = []
+    return true
+  }
+
   if (op.op === "timerStart") {
     if (!validInstance(op.instanceId)) return false
     if (state.active[op.instanceId]) return false
@@ -194,11 +234,126 @@ function apply(state, op, user) {
 
   if (op.op === "setPrice") {
     if (typeof op.dropId !== "string" || !/^[a-z0-9-]{1,64}$/.test(op.dropId)) return false
-    const price = Number(op.price)
-    if (!Number.isFinite(price) || price < 0 || price > 1e15) return false
-    const rounded = Math.round(price)
+    const rounded = clampMoney(op.price)
+    if (rounded === null) return false
     if (rounded <= 0) delete state.prices[op.dropId]
     else state.prices[op.dropId] = rounded
+    return true
+  }
+
+  if (op.op === "upsertDailyLoot") {
+    if (typeof op.dropId !== "string" || !/^[a-z0-9-]{1,64}$/.test(op.dropId)) return false
+    if (!validInstance(op.instanceId)) return false
+    if (typeof op.itemName !== "string" || op.itemName.trim().length < 1 || op.itemName.length > 120) return false
+    const qty = clampQty(op.qty)
+    const price = clampMoney(op.price)
+    if (qty === null || price === null) return false
+    const at = typeof op.at === "string" && !Number.isNaN(Date.parse(op.at)) ? new Date(op.at).toISOString() : new Date().toISOString()
+    const day = dayKey(at)
+    const itemId = Number.isFinite(Number(op.itemId)) && Number(op.itemId) > 0 ? Math.round(Number(op.itemId)) : undefined
+    if (price > 0) state.prices[op.dropId] = price
+    const idx = state.loot.findIndex(
+      (row) => row.source === "instance" && row.user === user && row.dropId === op.dropId && row.day === day,
+    )
+    if (qty <= 0) {
+      if (idx >= 0) state.loot.splice(idx, 1)
+      return true
+    }
+    const entry = {
+      id: idx >= 0 ? state.loot[idx].id : makeId(),
+      source: "instance",
+      user,
+      itemName: op.itemName.trim(),
+      itemId,
+      dropId: op.dropId,
+      instanceId: op.instanceId,
+      qty,
+      price,
+      at,
+      day,
+    }
+    if (idx >= 0) state.loot[idx] = entry
+    else state.loot.push(entry)
+    return true
+  }
+
+  if (op.op === "addFarmLoot") {
+    if (typeof op.itemName !== "string" || op.itemName.trim().length < 1 || op.itemName.length > 120) return false
+    const qty = clampQty(op.qty)
+    const price = clampMoney(op.price)
+    if (qty === null || price === null || qty <= 0) return false
+    const at = typeof op.at === "string" && !Number.isNaN(Date.parse(op.at)) ? new Date(op.at).toISOString() : new Date().toISOString()
+    const location = typeof op.location === "string" ? op.location.trim().slice(0, 80) : ""
+    const itemId = Number.isFinite(Number(op.itemId)) && Number(op.itemId) > 0 ? Math.round(Number(op.itemId)) : undefined
+    state.loot.push({
+      id: makeId(),
+      source: "farm",
+      user,
+      itemName: op.itemName.trim(),
+      itemId,
+      location: location || undefined,
+      qty,
+      price,
+      at,
+      day: dayKey(at),
+    })
+    return true
+  }
+
+  if (op.op === "deleteHistory") {
+    const ids = new Set(cleanIds(op.ids))
+    if (!ids.size) return false
+    const before = state.history.length
+    state.history = state.history.filter((row) => !ids.has(row.id))
+    return state.history.length !== before
+  }
+
+  if (op.op === "deleteRuns") {
+    const ids = new Set(cleanIds(op.ids))
+    if (!ids.size) return false
+    const before = state.runs.length
+    state.runs = state.runs.filter((row) => !ids.has(row.id))
+    return state.runs.length !== before
+  }
+
+  if (op.op === "deleteLoot") {
+    const ids = new Set(cleanIds(op.ids))
+    if (!ids.size) return false
+    const before = state.loot.length
+    state.loot = state.loot.filter((row) => !ids.has(row.id))
+    return state.loot.length !== before
+  }
+
+  if (op.op === "deleteFarmSessions") {
+    const ids = new Set(cleanIds(op.ids))
+    if (!ids.size) return false
+    const before = state.farmSessions.length
+    state.farmSessions = state.farmSessions.filter((row) => !ids.has(row.id))
+    return state.farmSessions.length !== before
+  }
+
+  if (op.op === "farmTimerStart") {
+    if (state.activeFarm) return false
+    const location = typeof op.location === "string" ? op.location.trim().slice(0, 80) : ""
+    if (!location) return false
+    state.activeFarm = { startedAt: Date.now(), elapsedMs: 0, user, location }
+    return true
+  }
+
+  if (op.op === "farmTimerStop") {
+    const active = state.activeFarm
+    if (!active) return false
+    const raw = Math.max(0, active.elapsedMs + (Date.now() - active.startedAt))
+    state.farmSessions.push({
+      id: makeId(),
+      location: active.location,
+      user: active.user,
+      ms: Math.min(raw, CAP_MS),
+      at: new Date().toISOString(),
+      startedAt: active.startedAt,
+      capped: raw > CAP_MS,
+    })
+    state.activeFarm = null
     return true
   }
 
