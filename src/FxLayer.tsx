@@ -1,93 +1,39 @@
-import Aurora from "./bits/Aurora"
-import LightRays from "./bits/LightRays"
-import Particles from "./bits/Particles"
-import type { Person } from "./types"
+import DarkVeil from "./bits/DarkVeil"
 
 export function GateFx() {
   return (
-    <>
-      <div className="fx-layer fx-rays" aria-hidden="true">
-        <LightRays
-          raysOrigin="top-center"
-          raysColor="#7ad7ff"
-          raysSpeed={0.65}
-          lightSpread={0.85}
-          rayLength={1.4}
-          intensity={0.7}
-          pulsating
-          fadeDistance={1.1}
-        />
-      </div>
-      <div className="fx-layer fx-aurora" aria-hidden="true">
-        <Aurora
-          colorStops={["#4ef0d3", "#7ad7ff", "#9b8cff"]}
-          amplitude={1}
-          blend={0.6}
-          speed={0.75}
-          height={1.15}
-          opacity={0.5}
-          mouseInteraction={false}
-        />
-      </div>
-      <div className="fx-layer fx-particles" aria-hidden="true">
-        <Particles
-          particleCount={90}
-          particleSpread={9}
-          speed={0.18}
-          particleColors={["#4ef0d3", "#7ad7ff", "#ffd56a", "#9b8cff"]}
-          alphaParticles
-          particleBaseSize={70}
-          sizeRandomness={0.8}
-          shape="sparkle"
-          glow={1.4}
-          twinkle={0.7}
-          drift="up"
-          driftSpeed={0.15}
-          moveParticlesOnHover={false}
-          opacity={0.7}
-        />
-      </div>
-    </>
+    <div className="fx-layer" aria-hidden="true">
+      <DarkVeil
+        color="#dafa9c"
+        speed={0.55}
+        scale={1.1}
+        warp={0.35}
+        brightness={0.55}
+        sheen={0.4}
+        glow={0.55}
+        grain={0.12}
+        opacity={0.85}
+        mouseInteraction
+      />
+    </div>
   )
 }
 
-export function BoardFx({ user }: { user: Person }) {
-  const colors =
-    user === "thiago"
-      ? ["#4ef0d3", "#7ad7ff", "#9b8cff", "#ffd56a"]
-      : ["#ffb4c8", "#9b8cff", "#7ad7ff", "#ffd56a"]
-
+export function BoardFx() {
   return (
-    <>
-      <div className="fx-layer fx-aurora soft" aria-hidden="true">
-        <Aurora
-          colorStops={colors.slice(0, 3)}
-          amplitude={0.75}
-          blend={0.5}
-          speed={0.5}
-          height={1}
-          opacity={0.22}
-          mouseInteraction={false}
-        />
-      </div>
-      <div className="fx-layer fx-particles soft" aria-hidden="true">
-        <Particles
-          particleCount={55}
-          particleSpread={11}
-          speed={0.12}
-          particleColors={colors}
-          alphaParticles
-          particleBaseSize={55}
-          shape="sparkle"
-          glow={1.1}
-          twinkle={0.55}
-          drift="up"
-          driftSpeed={0.1}
-          moveParticlesOnHover={false}
-          opacity={0.45}
-        />
-      </div>
-      <div className="midgard-veil" aria-hidden="true" />
-    </>
+    <div className="fx-layer soft" aria-hidden="true">
+      <DarkVeil
+        color="#dafa9c"
+        speed={0.35}
+        scale={1.25}
+        warp={0.2}
+        brightness={0.28}
+        sheen={0.25}
+        glow={0.35}
+        grain={0.08}
+        opacity={0.55}
+        mouseInteraction={false}
+      />
+    </div>
   )
 }

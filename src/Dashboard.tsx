@@ -150,7 +150,7 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
     return { counts, time, zeny, bySection, line, slow, table, runs: [...runs].reverse().slice(0, 8), history }
   }, [byId, now, other, otherKey, range, state, viewer, youKey])
 
-  const axis = { fill: "#a9b6cf", fontSize: 11 }
+  const axis = { fill: "#8f8f8f", fontSize: 11 }
   const hasWork = view.history.length > 0 || view.runs.length > 0 || Object.keys(state.active).length > 0
 
   return (
@@ -210,13 +210,13 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
             <div className="chart">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={view.bySection} accessibilityLayer>
-                  <CartesianGrid stroke="rgba(122,215,255,0.08)" vertical={false} />
+                  <CartesianGrid stroke="rgba(218,250,156,0.08)" vertical={false} />
                   <XAxis dataKey="name" tick={axis} axisLine={false} tickLine={false} />
                   <YAxis allowDecimals={false} tick={axis} axisLine={false} tickLine={false} width={28} />
                   <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                  <Legend wrapperStyle={{ color: "#a9b6cf", fontSize: 12 }} />
-                  <Bar dataKey={youKey} fill="#4ef0d3" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey={otherKey} fill="#ff8f6b" radius={[6, 6, 0, 0]} />
+                  <Legend wrapperStyle={{ color: "#8f8f8f", fontSize: 12 }} />
+                  <Bar dataKey={youKey} fill="#dafa9c" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey={otherKey} fill="#ff9b7a" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -228,13 +228,13 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
             <div className="chart">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={view.line} accessibilityLayer margin={{ right: 16, left: 0 }}>
-                  <CartesianGrid stroke="rgba(122,215,255,0.08)" vertical={false} />
+                  <CartesianGrid stroke="rgba(218,250,156,0.08)" vertical={false} />
                   <XAxis dataKey="name" tick={axis} axisLine={false} tickLine={false} interval={range === "7" ? 0 : 4} />
                   <YAxis allowDecimals={false} tick={axis} axisLine={false} tickLine={false} width={28} />
                   <Tooltip content={<Tip />} />
-                  <Legend wrapperStyle={{ color: "#a9b6cf", fontSize: 12 }} />
-                  <Line type="monotone" dataKey={youKey} stroke="#4ef0d3" strokeWidth={2.6} dot={false} />
-                  <Line type="monotone" dataKey={otherKey} stroke="#ff8f6b" strokeWidth={2.6} dot={false} />
+                  <Legend wrapperStyle={{ color: "#8f8f8f", fontSize: 12 }} />
+                  <Line type="monotone" dataKey={youKey} stroke="#dafa9c" strokeWidth={2.6} dot={false} />
+                  <Line type="monotone" dataKey={otherKey} stroke="#ff9b7a" strokeWidth={2.6} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -247,11 +247,11 @@ export function Dashboard({ state, now, viewer }: { state: GameState; now: numbe
               <div className="chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={view.slow} layout="vertical" accessibilityLayer margin={{ left: 8, right: 8 }}>
-                    <CartesianGrid stroke="rgba(122,215,255,0.08)" horizontal={false} />
+                    <CartesianGrid stroke="rgba(218,250,156,0.08)" horizontal={false} />
                     <XAxis type="number" tick={axis} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="name" width={120} tick={axis} axisLine={false} tickLine={false} />
                     <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                    <Bar dataKey="minutos" fill="#7ad7ff" radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="minutos" fill="#9fd6ff" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
