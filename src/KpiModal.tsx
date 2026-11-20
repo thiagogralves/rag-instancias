@@ -12,12 +12,24 @@ type Props = {
   subtitle?: string
   rows: KpiRow[]
   onClose: () => void
-  onDelete: (ids: string[]) => void
+  onDelete: (ids: string[]) => void | Promise<unknown>
 }
 
 export function KpiModal({ title, subtitle, rows, onClose, onDelete }: Props) {
   const [selected, setSelected] = useState<Record<string, boolean>>({})
+  const [busy, setBusy] = useState(false)
   const ids = useMemo(() => Object.keys(selected).filter((id) => selected[id]), [selected])
+
+  async function remove(targets: string[]) {
+    if (!targets.length || busy) return
+    setBusy(true)
+    try {
+      await onDelete(targets)
+      setSelected({})
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="sheet-root" role="dialog" aria-modal="true" aria-labelledby="kpi-titulo">
@@ -43,6 +55,14 @@ export function KpiModal({ title, subtitle, rows, onClose, onDelete }: Props) {
                   </span>
                   {row.value && <em>{row.value}</em>}
                 </label>
+                <button
+                  className="ghost slim danger-text"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void remove([row.id])}
+                >
+                  Excluir
+                </button>
               </li>
             ))}
           </ul>
@@ -52,13 +72,10 @@ export function KpiModal({ title, subtitle, rows, onClose, onDelete }: Props) {
           <button
             className="danger"
             type="button"
-            disabled={!ids.length}
-            onClick={() => {
-              onDelete(ids)
-              setSelected({})
-            }}
+            disabled={!ids.length || busy}
+            onClick={() => void remove(ids)}
           >
-            Excluir selecionados ({ids.length})
+            {busy ? "Excluindo…" : `Excluir selecionados (${ids.length})`}
           </button>
         </div>
       </div>

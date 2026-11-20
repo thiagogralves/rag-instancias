@@ -15,6 +15,7 @@ export const RO = {
   flyWing: "/ro/flywing.png",
   butterflyWing: "/ro/butterfly-wing.png",
   yggBerry: "/ro/ygg-berry.png",
+  yggSeed: "/ro/ygg-seed.png",
   concentrated: "/ro/concentrated.png",
 } as const
 

@@ -78,7 +78,7 @@ export default defineConfig({
     host: true,
     port: 5173,
     watch: {
-      ignored: ["**/public/art/CREDITS.txt", "**/data/**"],
+      ignored: ["**/public/art/CREDITS.txt", "**/data/**", "**/.edge-ext-test/**"],
     },
   },
 })

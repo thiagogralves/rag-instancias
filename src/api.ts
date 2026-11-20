@@ -22,10 +22,15 @@ async function call(method: "GET" | "POST", email: string, body?: Op) {
     headers,
     body: body ? JSON.stringify(body) : undefined,
   })
-  const data = (await res.json().catch(() => ({}))) as { error?: string; user?: Person; state?: GameState }
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string
+    user?: Person
+    state?: GameState
+    changed?: boolean
+  }
   if (res.status === 401) throw new Error("unauthorized")
   if (!res.ok || !data.state || !data.user) throw new Error(data.error || "sync")
-  return { user: data.user, state: data.state }
+  return { user: data.user, state: data.state, changed: data.changed !== false }
 }
 
 export function loadState(email: string) {

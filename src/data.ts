@@ -59,7 +59,9 @@ const minerio = drop(
 const anelOrcs = drop("anel-orcs",
   "Anel dos Orcs",
   "O anel recebe 2 encantos, um de cada vez. A categoria é escolhida; o encanto específico, não.",
-  ["Cada encanto custa 100.000 zeny e 20 Presas de Orc. Sucesso de 100%. O reset só existe com os 2 slots preenchidos."], 28522)
+  ["Cada encanto custa 100.000 zeny e 20 Presas de Orc. Sucesso de 100%. O reset só existe com os 2 slots preenchidos."],
+  28522,
+)
 const amuleto = drop(
   "amuleto-menor",
   "Amuleto Menor",
@@ -110,6 +112,79 @@ const moedaSang = drop("moeda-sangrenta",
   "Moeda Sangrenta",
   "Premiação da Fábrica do Terror e da Fábrica Infantil. Baús ainda podem deixar caixas e chapelaria antiga.",
   ["Trocada pelos itens natalinos de Lutie."], 7642)
+const albumCartas = drop(
+  "velho-album-cartas",
+  "Velho Álbum de Cartas",
+  "Sai nos presentes/baús da Fábrica do Terror e da Fábrica Infantil (e em vários MVPs).",
+  ["Abre uma carta comum aleatória."],
+  616,
+)
+const albumMagico = drop(
+  "album-magico-cartas",
+  "Álbum Mágico de Cartas",
+  "Drop dos presentes da Fábrica do Terror / Infantil.",
+  ["Abre uma carta com chance de raridades melhores."],
+  12246,
+)
+const velhaCaixaAzul = drop("velha-caixa-azul", "Velha Caixa Azul", "Drop clássico de baús e presentes de instância.", [], 603)
+const velhaCaixaRoxa = drop("velha-caixa-roxa", "Velha Caixa Roxa", "Drop clássico de baús e presentes de instância.", [], 617)
+const caixaPresente = drop("caixa-presente", "Caixa de Presente", "Sai nos pacotes da Fábrica do Terror.", [], 644)
+const ouroBarra = drop("ouro-barra", "Ouro em Barra", "Drop raro dos presentes da Fábrica do Terror.", [], 7228)
+const prataBarra = drop("prata-barra", "Prata em Barra", "Drop raro dos presentes da Fábrica do Terror.", [], 7229)
+const platinaBarra = drop("platina-barra", "Platina em Barra", "Drop raro dos presentes da Fábrica do Terror.", [], 7230)
+const presilhaRosas = drop("presilha-rosas", "Presilha de Rosas", "Visual raro dos baús da Fábrica do Terror / Infantil.", [], 18848)
+const coracaoPartido = drop("coracao-partido", "Coração Partido", "Visual raro dos baús da Fábrica do Terror / Infantil.", [], 2977)
+const coracaoBondoso = drop("coracao-bondoso", "Coração Bondoso", "Visual raro dos baús da Fábrica do Terror / Infantil.", [], 2978)
+const lampiaoTrevas = drop("lampiao-trevas", "Lampião das Trevas", "Visual raro dos baús da Fábrica do Terror / Infantil.", [], 2976)
+const guardaChuva = drop("guarda-chuva-antiquado", "Guarda-Chuva Antiquado", "Visual raro dos baús da Fábrica do Terror / Infantil.", [], 13442)
+const passoSombras = drop("passo-das-sombras", "Passo das Sombras", "Calçado visual raro dos baús da Fábrica do Terror / Infantil.", [], 2426)
+const cartaCeline = drop(
+  "carta-celine-kimi",
+  "Carta Celine Kimi",
+  "Carta da MVP da Fábrica do Terror.",
+  ["Dano mágico +10%. Chance de autoconjurar Ferida Mortal."],
+  31023,
+)
+const caixaFerramentas = drop(
+  "caixa-ferramentas-fechada",
+  "Caixa de Ferramentas Fechada",
+  "Drop dos presentes da Fábrica do Terror.",
+  [],
+  22534,
+)
+
+const terrorDrops = [
+  moedaSang,
+  albumCartas,
+  albumMagico,
+  velhaCaixaAzul,
+  velhaCaixaRoxa,
+  caixaPresente,
+  ouroBarra,
+  prataBarra,
+  platinaBarra,
+  caixaFerramentas,
+  cartaCeline,
+  presilhaRosas,
+  coracaoPartido,
+  coracaoBondoso,
+  lampiaoTrevas,
+  guardaChuva,
+  passoSombras,
+]
+
+const terrorKidsDrops = [
+  moedaSang,
+  albumCartas,
+  albumMagico,
+  caixaPresente,
+  presilhaRosas,
+  coracaoPartido,
+  coracaoBondoso,
+  lampiaoTrevas,
+  guardaChuva,
+  passoSombras,
+]
 const brasao = drop("brasao-honra", "Brasão de Honra", "Premiação da operação militar em Terra Gloria.")
 const mana = drop("mana-coagulada", "Mana Coagulada", "Premiação de Maldição de Glastheim e de Glastheim Infantil.")
 const cristalTempo = drop("cristal-tempo", "Cristal do Tempo", "Sai na Maldição de Glastheim, junto da mana.")
@@ -184,10 +259,13 @@ const cenourinha = drop("cenourinha",
   "Cenourinha",
   "Vegetal da Vila dos Porings. Recebe 1 encanto aleatório.",
   ["Encantar ou resetar custa 20.000 zeny e 50 Jellopy, com 70% de sucesso."], 19239)
-const moedaNoite = drop("moeda-noturna",
+const moedaNoite = drop(
+  "moeda-noturna",
   "Moeda Noturna de Geffen",
   "A recompensa só entra se a rodada terminar e você desistir. Quanto mais longe, maior o prêmio.",
-  ["A Máquina Abandonada (dali 79, 60) troca a moeda por equipamentos, adornos e cartas noturnas."], 1000316)
+  ["A Máquina Abandonada (dali 79, 60) troca a moeda por equipamentos, adornos e cartas noturnas."],
+  1000316,
+)
 const sobrenatural = drop(
   "arma-sobrenatural",
   "Arma Sobrenatural",
@@ -313,12 +391,40 @@ export const INSTANCES: Instance[] = [
   inst("inst_19", "Duelo com Sweety", "diario", 2, 0, "130", "Diária", "1+", "Legado do Sábio", "Vale Varmida", "Duelo_com_Sweety", [vale, nucleoAuto], "A recompensa é retirada com Amêndoa, fora da instância."),
   inst("inst_30", "Edda do Biolaboratório", "diario", 2, 0, "170", "Diária", "1+", "-", "Fragmento de Experimento", "Edda_do_Biolaboratório", [fragExp, bioarma], "Modo Batalha paga mais. Modo Expedição luta menos."),
   inst("inst_3", "Edda do Quarto Crescente", "diario", 2, 0, "80", "Diária", "Solo", "-", "Fragmento de Sonho", "Edda_do_Quarto_Crescente", [fragSonho]),
-  inst("inst_24", "Fábrica do Terror", "diario", 2, 0, "140", "Diária", "1+", "-", "Moeda Sangrenta", "Fábrica_do_Terror", [moedaSang]),
+  inst(
+    "inst_24",
+    "Fábrica do Terror",
+    "diario",
+    2,
+    0,
+    "140",
+    "Diária",
+    "1+",
+    "-",
+    "Moeda Sangrenta",
+    "Fábrica_do_Terror",
+    terrorDrops,
+    "Os Pacotes de Presente derrubam moedas, álbuns, caixas, barras e visuais. A Celine Kimi ainda pode dropar carta e álbum. Bônus de drop não afeta os baús.",
+  ),
   inst("inst_18", "Fazenda de Pitayas", "diario", 2, 0, "130", "Diária", "1+", "Legado do Sábio", "Vale Varmida", "Fazenda_de_Pitayas", [vale]),
   inst("inst_27", "Ilha Bios", "diario", 2, 0, "160", "Diária", "1+", "Viagem Dimensional", "Marca do Herói", "Ilha_Bios", [marca]),
   inst("inst_13", "Invasão ao Aeroplano", "diario", 2, 0, "125", "Diária", "Solo", "-", "Experiência", "Invasão_ao_Aeroplano", [], "A recompensa é experiência. Os monstros do aviso são NPCs de cena."),
   inst("inst_17", "Jardim Secreto", "diario", 2, 0, "130", "Diária", "1+", "Zona Restrita", "Vale Varmida", "Jardim_Secreto", [vale], "Também pode sair Caixa de Automódulo H-. O MVP precisa morrer na sua tela."),
-  inst("inst_25", "Laboratório Central", "diario", 2, 0, "140", "Diária", "1+", "Fantasmagórica", "Batalha contra MVPs", "Laboratório_Central", [], "A instância é a batalha contra MVPs aleatórios. A bROWiki não lista um item fixo de craft."),
+  inst(
+    "inst_25",
+    "Laboratório Central",
+    "diario",
+    2,
+    0,
+    "140",
+    "Diária",
+    "1+",
+    "Fantasmagórica",
+    "Batalha contra MVPs",
+    "Laboratório_Central",
+    [albumCartas, velhaCaixaRoxa, velhaCaixaAzul],
+    "MVP aleatório. Vários chefes dropam Velho Álbum de Cartas e caixas. Use “Outro drop” pra cartas específicas.",
+  ),
   inst("inst_8", "Laboratório Werner", "diario", 2, 0, "100", "Diária", "1+", "Terra Gloria", "Brasão de Honra", "Laboratório_Werner", [brasao]),
   inst("inst_21", "Maldição de Glastheim", "diario", 2, 0, "130", "Diária", "1+", "-", "Mana Coagulada", "Maldição_de_Glastheim", [mana, cristalTempo], "O grupo precisa estar vivo e na mesma tela para o MVP contar."),
   inst("inst_33", "Mansão da Desilusão", "diario", 2, 0, "200", "Diária", "2+", "-", "Chave da Mansão", "Mansão_da_Desilusão", [chave, ametista]),
@@ -353,7 +459,21 @@ export const INSTANCES: Instance[] = [
   inst("inst_38", "Torre Submersa", "tres", 3, 0, "40", "3 dias", "1+", "-", "Experiência", "Torre_Submersa", [], "A cada 5 andares, o portal entrega uma recompensa única de experiência."),
 
   inst("inst_53", "Cripta", "semanal", 4, 0, "60", "Fim de semana", "1+", "-", "Poções de experiência", "Cripta", [pocaoExp, pocaoClasse], "A dificuldade escolhida vai de 60 a 160."),
-  inst("inst_55", "Fábrica Infantil", "semanal", 4, 0, "70", "Quinta-feira", "1+", "-", "Moeda Sangrenta", "Fábrica_Infantil", [moedaSang]),
+  inst(
+    "inst_55",
+    "Fábrica Infantil",
+    "semanal",
+    4,
+    0,
+    "70",
+    "Quinta-feira",
+    "1+",
+    "-",
+    "Moeda Sangrenta",
+    "Fábrica_Infantil",
+    terrorKidsDrops,
+    "Os baús soltam moedas, álbuns, caixas e chance baixa de visuais. Bônus de drop não afeta os baús.",
+  ),
   inst("inst_54", "Glastheim Infantil", "semanal", 4, 0, "65", "Quinta-feira", "1+", "-", "Mana Coagulada", "Glastheim_Infantil", [mana, cristalTemporal]),
   inst("inst_57", "Hospital Abandonado", "semanal", 4, 0, "100", "7 dias", "1+", "Enfermeira em Porto Malaya", "Tatuagem de Bangungot", "Hospital_Abandonado", [tatuBang]),
   inst("inst_58", "Lago de Bakonawa", "semanal", 4, 0, "140", "7 dias", "1+", "Livre-se de Bakonawa", "Tatuagem de Bakonawa", "Lago_de_Bakonawa", [tatuBako]),

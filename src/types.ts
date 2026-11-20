@@ -88,6 +88,8 @@ export type GameState = {
   active: Record<string, ActiveTimer>
   prices: Record<string, number>
   watch: Record<Person, string[]>
+  /** Prioridade pessoal do Thiago (semente de Ygg). */
+  watchSeed: string[]
   loot: LootEntry[]
   farmSessions: FarmSession[]
   activeFarm: ActiveFarm | null
@@ -95,11 +97,13 @@ export type GameState = {
 
 export type Op =
   | { op: "toggleWatch"; instanceId: string }
+  | { op: "toggleSeed"; instanceId: string }
   | { op: "toggleDone"; instanceId: string }
   | { op: "resetSeals" }
   | { op: "timerStart"; instanceId: string }
   | { op: "timerStop"; instanceId: string }
   | { op: "setPrice"; dropId: string; price: number }
+  | { op: "setPrices"; items: { dropId: string; price: number }[] }
   | { op: "upsertDailyLoot"; dropId: string; instanceId: string; itemName: string; itemId?: number; qty: number; price: number; at?: string }
   | { op: "addFarmLoot"; itemName: string; itemId?: number; qty: number; price: number; location?: string; at?: string }
   | { op: "deleteHistory"; ids: string[] }

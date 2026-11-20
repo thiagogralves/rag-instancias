@@ -28,6 +28,7 @@ function defaultState() {
     active: {},
     prices: {},
     watch: { thiago: [], rafael: [] },
+    watchSeed: [],
     loot: [],
     farmSessions: [],
     activeFarm: null,
@@ -48,6 +49,7 @@ function normalize(input) {
       thiago: Array.isArray(input.watch?.thiago) ? input.watch.thiago : [],
       rafael: Array.isArray(input.watch?.rafael) ? input.watch.rafael : [],
     },
+    watchSeed: Array.isArray(input.watchSeed) ? input.watchSeed : [],
     loot: Array.isArray(input.loot) ? input.loot : [],
     farmSessions: Array.isArray(input.farmSessions) ? input.farmSessions : [],
     activeFarm: input.activeFarm && typeof input.activeFarm === "object" ? input.activeFarm : null,
@@ -174,11 +176,29 @@ function apply(state, op, user) {
   if (!op || typeof op !== "object") return false
 
   if (op.op === "toggleWatch") {
+    // Fruto de Ygg: prioridade da party (os dois).
     if (!validInstance(op.instanceId)) return false
-    const list = new Set(state.watch[user])
+    const id = op.instanceId
+    const on = state.watch.thiago.includes(id) || state.watch.rafael.includes(id)
+    if (on) {
+      state.watch.thiago = state.watch.thiago.filter((item) => item !== id)
+      state.watch.rafael = state.watch.rafael.filter((item) => item !== id)
+    } else {
+      state.watch.thiago = [...new Set([...state.watch.thiago, id])]
+      state.watch.rafael = [...new Set([...state.watch.rafael, id])]
+    }
+    return true
+  }
+
+  if (op.op === "toggleSeed") {
+    // Semente de Ygg: prioridade só do Thiago.
+    if (user !== "thiago") return false
+    if (!validInstance(op.instanceId)) return false
+    if (!Array.isArray(state.watchSeed)) state.watchSeed = []
+    const list = new Set(state.watchSeed)
     if (list.has(op.instanceId)) list.delete(op.instanceId)
     else list.add(op.instanceId)
-    state.watch[user] = [...list]
+    state.watchSeed = [...list]
     return true
   }
 
@@ -239,6 +259,28 @@ function apply(state, op, user) {
     if (rounded <= 0) delete state.prices[op.dropId]
     else state.prices[op.dropId] = rounded
     return true
+  }
+
+  if (op.op === "setPrices") {
+    if (!Array.isArray(op.items) || op.items.length === 0 || op.items.length > 200) return false
+    let changed = false
+    for (const item of op.items) {
+      if (!item || typeof item.dropId !== "string" || !/^[a-z0-9-]{1,64}$/.test(item.dropId)) continue
+      const rounded = clampMoney(item.price)
+      if (rounded === null) continue
+      if (rounded <= 0) {
+        if (state.prices[item.dropId] != null) {
+          delete state.prices[item.dropId]
+          changed = true
+        }
+        continue
+      }
+      if (state.prices[item.dropId] !== rounded) {
+        state.prices[item.dropId] = rounded
+        changed = true
+      }
+    }
+    return changed
   }
 
   if (op.op === "upsertDailyLoot") {
@@ -375,18 +417,18 @@ export async function handleState(method, emailHeader, body) {
     }
     if (method !== "POST") return { status: 405, data: { error: "method" } }
 
-    const state = await enqueue(() =>
+    const result = await enqueue(() =>
       withLock(async () => {
         const current = await readState()
         const changed = apply(current, body, user)
-        if (!changed) return current
+        if (!changed) return { state: current, changed: false }
         current.version = (Number(current.version) || 1) + 1
         trimState(current)
         await writeState(current)
-        return current
+        return { state: current, changed: true }
       }),
     )
-    return { status: 200, data: { user, state } }
+    return { status: 200, data: { user, state: result.state, changed: result.changed } }
   } catch (error) {
     if (error && error.code === "STORE") return { status: 503, data: { error: "store" } }
     if (error && error.code === "BUSY") return { status: 503, data: { error: "busy" } }

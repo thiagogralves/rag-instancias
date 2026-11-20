@@ -220,6 +220,7 @@ img { display: block; max-width: 100%; }
   border: 1px solid var(--line); background: transparent; color: var(--muted); font-weight: 600;
 }
 .ghost:hover { color: var(--ink); border-color: rgba(218, 250, 156, 0.35); }
+.ghost.slim { min-height: 36px; padding: 0 10px; font-size: 0.82rem; }
 
 .banner {
   margin: 0 0 12px; padding: 12px 14px; border-radius: 14px;
@@ -233,11 +234,17 @@ img { display: block; max-width: 100%; }
   display: grid;
   gap: 14px;
 }
+.filters { display: grid; gap: 8px; }
 .zones {
   display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
   scrollbar-width: none;
 }
 .zones::-webkit-scrollbar { display: none; }
+.zones.levels .zone.level {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.82rem;
+}
 .zone {
   flex: 0 0 auto;
   min-height: 44px; padding: 0 14px;
@@ -296,6 +303,7 @@ img { display: block; max-width: 100%; }
   transition: border-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
 }
 .row.flagged { border-color: rgba(255, 224, 138, 0.45); }
+.row.seeded { border-color: rgba(159, 214, 255, 0.4); }
 .row.both { border-color: rgba(218, 250, 156, 0.4); }
 .row.live-card {
   border-color: rgba(255, 122, 122, 0.45);
@@ -303,22 +311,37 @@ img { display: block; max-width: 100%; }
 }
 .row-main {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 8px;
   padding: 12px;
   align-items: start;
 }
+.flag-stack {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  align-items: flex-start;
+}
 .flag {
-  width: 44px; height: 44px; border-radius: 14px;
+  width: 40px; height: 40px; border-radius: 12px;
   border: 1px solid var(--line); background: #121212;
   display: grid; place-items: center; opacity: 0.55;
+  flex: 0 0 auto;
 }
 .flag[aria-pressed="true"] {
   opacity: 1; background: rgba(255, 224, 138, 0.12);
   border-color: rgba(255, 224, 138, 0.45);
 }
+.flag.seed[aria-pressed="true"] {
+  background: rgba(159, 214, 255, 0.12);
+  border-color: rgba(159, 214, 255, 0.45);
+}
 .row-head { min-width: 0; }
 .kicker { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.pill.avg {
+  color: var(--gold);
+  border-color: rgba(255, 214, 102, 0.28);
+}
 .badge, .pill {
   display: inline-flex; align-items: center; gap: 5px;
   min-height: 24px; padding: 0 9px; border-radius: 999px;
@@ -365,6 +388,10 @@ img { display: block; max-width: 100%; }
 }
 .seal.other[aria-pressed="true"] {
   background: rgba(255, 155, 122, 0.16); border-color: rgba(255, 155, 122, 0.5);
+}
+.seal:disabled {
+  cursor: default;
+  opacity: 0.85;
 }
 .timer {
   grid-column: 1 / -1;
@@ -429,7 +456,10 @@ img { display: block; max-width: 100%; }
 }
 .kpi.clickable:hover { transform: translateY(-1px); border-color: rgba(218, 250, 156, 0.35); }
 .kpi-sheet { max-height: min(80dvh, 720px); overflow: auto; }
-.kpi-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.kpi-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 55dvh; overflow: auto; }
+.kpi-list li {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+}
 .kpi-list label {
   display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;
   padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: #121212;
@@ -438,6 +468,16 @@ img { display: block; max-width: 100%; }
 .kpi-list small { display: block; color: var(--faint); font-size: 0.78rem; }
 .kpi-list em { font-style: normal; color: var(--accent); font-family: var(--font-mono); font-size: 0.82rem; }
 .kpi-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.danger-text { color: #ffb4b4 !important; }
+.extra-drop { display: grid; gap: 8px; margin-top: 10px; }
+.extra-drop-toggle { justify-self: start; }
+.item-suggest.compact { max-height: 180px; }
+.runs .run-row {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+.runs .run-row > div { display: grid; gap: 2px; min-width: 0; }
 .wiki-root { align-items: center; }
 .wiki-modal {
   position: relative; z-index: 1;
@@ -489,8 +529,28 @@ img { display: block; max-width: 100%; }
 .drop-copy strong, .drop-copy span {
   display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.drop-copy strong { font-size: 0.86rem; }
+.drop-copy strong {
+  font-size: 0.86rem;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
 .drop-copy span { color: var(--faint); font-size: 0.72rem; }
+.market-link {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(218, 250, 156, 0.35);
+}
+.market-link:hover { border-bottom-color: var(--accent); }
+.run-row strong {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
 .price-mini { display: grid; gap: 2px; justify-items: end; }
 .price-field {
   display: inline-flex; align-items: center; gap: 4px; width: 100%;
@@ -643,6 +703,7 @@ img { display: block; max-width: 100%; }
   display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px;
   background: #121212; border: 1px solid var(--line);
 }
+.runs li.run-row { display: grid; }
 .runs b { color: var(--accent); }
 .runs span { color: var(--faint); font-size: 0.8rem; }
 .table-wrap { overflow: auto; }
@@ -689,15 +750,23 @@ th { color: var(--muted); font-weight: 600; }
     grid-template-columns: 220px minmax(0, 1fr) 280px;
     align-items: start;
   }
+  .filters {
+    position: sticky;
+    top: 72px;
+    align-self: start;
+  }
   .zones {
     flex-direction: column;
     overflow: visible;
-    position: sticky;
-    top: 72px;
+  }
+  .zones.levels {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
   .zone { width: 100%; border-radius: 14px; justify-content: flex-start; }
+  .zones.levels .zone.level { width: auto; }
   .side { display: block; position: sticky; top: 72px; }
-  .row-main { grid-template-columns: 44px minmax(0, 1.2fr); }
+  .row-main { grid-template-columns: auto minmax(0, 1.2fr); }
   .main-col { min-width: 0; }
 }
 

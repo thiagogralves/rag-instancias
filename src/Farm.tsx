@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from "react"
 import type { CatalogItem, GameState, Op, Person } from "./types"
-import { CHARACTERS, itemIcon } from "./characters"
-import { dayKey, elapsedMs, formatClock, formatDuration, formatWhen, formatZeny, NAMES } from "./format"
-import { searchCatalog } from "./items-catalog"
+import { itemIcon } from "./characters"
+import { dayNoonIso, elapsedMs, formatClock, formatDuration, formatWhen, formatZeny, NAMES, todayKey } from "./format"
+import { MarketLink } from "./market/MarketLink"
+import { ensureCatalogLoaded, getCatalogSize, searchCatalog } from "./items-catalog"
 import { RO } from "./ro"
 
 type Props = {
   state: GameState
   now: number
   viewer: Person
-  act: (key: string, op: Op, message: string) => Promise<void>
+  act: (key: string, op: Op, message: string) => Promise<boolean>
 }
 
 export function Farm({ state, now, viewer, act }: Props) {
@@ -17,9 +18,15 @@ export function Farm({ state, now, viewer, act }: Props) {
   const [picked, setPicked] = useState<CatalogItem | null>(null)
   const [qty, setQty] = useState("1")
   const [price, setPrice] = useState("")
-  const [at, setAt] = useState(() => new Date().toISOString().slice(0, 10))
+  const [at, setAt] = useState(() => todayKey())
   const [location, setLocation] = useState(state.activeFarm?.location || "")
   const [remote, setRemote] = useState<CatalogItem[] | null>(null)
+  const [catalogSize, setCatalogSize] = useState(0)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    void ensureCatalogLoaded().then(() => setCatalogSize(getCatalogSize()))
+  }, [])
 
   useEffect(() => {
     const q = query.trim()
@@ -28,7 +35,7 @@ export function Farm({ state, now, viewer, act }: Props) {
       return
     }
     const handle = window.setTimeout(() => {
-      void fetch(`/api/items?q=${encodeURIComponent(q)}&limit=30`)
+      void fetch(`/api/items?q=${encodeURIComponent(q)}&limit=40`)
         .then((res) => res.json())
         .then((data: { items?: CatalogItem[] }) => setRemote(Array.isArray(data.items) ? data.items : []))
         .catch(() => setRemote(null))
@@ -36,31 +43,61 @@ export function Farm({ state, now, viewer, act }: Props) {
     return () => window.clearTimeout(handle)
   }, [query])
 
-  const suggestions = useMemo(() => remote ?? searchCatalog(query, 30), [query, remote])
-  const today = dayKey(new Date().toISOString())
-  const mineToday = state.loot.filter((row) => row.source === "farm" && row.user === viewer && row.day === today)
+  const suggestions = useMemo(() => {
+    const local = searchCatalog(query, 40)
+    if (!remote?.length) return local
+    const byId = new Map<number, CatalogItem>()
+    for (const item of [...local, ...remote]) byId.set(item.id, item)
+    return [...byId.values()].slice(0, 40)
+  }, [query, remote])
+
+  const today = todayKey(now)
+  const loot = state.loot || []
+  const sessions = state.farmSessions || []
+  const mineFarm = loot.filter((row) => row.source === "farm" && row.user === viewer)
+  const mineToday = mineFarm.filter((row) => row.day === today)
+  const mineRecent = [...mineFarm].reverse().slice(0, 30)
+  const mineSessions = sessions.filter((row) => row.user === viewer)
   const active = state.activeFarm
 
+  async function removeLoot(id: string, label: string) {
+    await act(`farm-del-${id}`, { op: "deleteLoot", ids: [id] }, `${label} removido.`)
+  }
+
+  async function removeSession(id: string, label: string) {
+    await act(`farm-sess-del-${id}`, { op: "deleteFarmSessions", ids: [id] }, `Sessão ${label} removida.`)
+  }
+
   async function addLoot() {
-    if (!picked) return
+    if (!picked || saving) return
     const q = Number(qty || 0)
     const p = Number(price || 0)
     if (!q || q < 0) return
-    const iso = at ? new Date(`${at}T12:00:00`).toISOString() : new Date().toISOString()
-    await act(
-      `farm-loot-${picked.id}-${Date.now()}`,
-      {
-        op: "addFarmLoot",
-        itemName: picked.name,
-        itemId: picked.id,
-        qty: q,
-        price: p,
-        location: location.trim() || undefined,
-        at: iso,
-      },
-      `${picked.name} adicionado ao farm.`,
-    )
-    setQty("1")
+    setSaving(true)
+    try {
+      const ok = await act(
+        `farm-loot-${picked.id}-${Date.now()}`,
+        {
+          op: "addFarmLoot",
+          itemName: picked.name,
+          itemId: picked.id,
+          qty: q,
+          price: Number.isFinite(p) ? p : 0,
+          location: location.trim() || undefined,
+          at: dayNoonIso(at || today),
+        },
+        `${picked.name} adicionado ao farm.`,
+      )
+      if (ok) {
+        setQty("1")
+        setPrice("")
+        setPicked(null)
+        setQuery("")
+        setRemote(null)
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -105,7 +142,9 @@ export function Farm({ state, now, viewer, act }: Props) {
 
       <section className="panel">
         <h2>Registrar drop</h2>
-        <p className="fine">Busca itens em português (catálogo local + Divine-Pride se a chave estiver ligada).</p>
+        <p className="fine">
+          Só conta pro seu personagem. Catálogo bRO{catalogSize ? ` (${catalogSize.toLocaleString("pt-BR")} itens)` : ""} — digite nome ou ID e toque na sugestão.
+        </p>
         <label>
           Buscar item
           <input value={query} placeholder="Nome ou ID…" onChange={(event) => setQuery(event.target.value)} />
@@ -128,6 +167,9 @@ export function Farm({ state, now, viewer, act }: Props) {
             )
           })}
         </div>
+        {picked && (
+          <p className="fine">Selecionado: <b>{picked.name}</b> #{picked.id}</p>
+        )}
         <div className="farm-form">
           <label>
             Qtd
@@ -139,25 +181,33 @@ export function Farm({ state, now, viewer, act }: Props) {
           </label>
           <label>
             Data
-            <input type="date" value={at} onChange={(event) => setAt(event.target.value)} />
+            <input type="date" value={at} onChange={(event) => setAt(event.target.value || today)} />
           </label>
         </div>
-        <button className="primary" type="button" disabled={!picked} onClick={() => void addLoot()}>
-          Adicionar {picked ? picked.name : "item"}
+        <button className="primary" type="button" disabled={!picked || saving || !Number(qty)} onClick={() => void addLoot()}>
+          {saving ? "Salvando…" : `Adicionar ${picked ? picked.name : "item"}`}
         </button>
       </section>
 
       <section className="panel">
-        <h2>Drops de farm hoje</h2>
+        <h2>Seus drops de farm hoje</h2>
         {mineToday.length === 0 ? (
-          <p className="fine">Nada registrado hoje.</p>
+          <p className="fine">Nada registrado hoje ({today}).</p>
         ) : (
           <ul className="runs">
             {mineToday.map((row) => (
-              <li key={row.id}>
-                <strong>{row.itemName}</strong>
-                <b>{row.qty} × {formatZeny(row.price)} z = {formatZeny(row.qty * row.price)} z</b>
-                <span>{row.location || "sem local"} · {formatWhen(row.at)}</span>
+              <li key={row.id} className="run-row">
+                <div>
+                  <strong>
+                    {row.itemName}
+                    <MarketLink name={row.itemName} />
+                  </strong>
+                  <b>{row.qty} × {formatZeny(row.price)} z = {formatZeny(row.qty * row.price)} z</b>
+                  <span>{row.location || "sem local"} · {formatWhen(row.at)}</span>
+                </div>
+                <button className="ghost slim" type="button" onClick={() => void removeLoot(row.id, row.itemName)}>
+                  Excluir
+                </button>
               </li>
             ))}
           </ul>
@@ -165,16 +215,47 @@ export function Farm({ state, now, viewer, act }: Props) {
       </section>
 
       <section className="panel">
-        <h2>Últimas sessões</h2>
-        {state.farmSessions.length === 0 ? (
+        <h2>Seus drops recentes</h2>
+        <p className="fine">Inclui outros dias — use pra apagar teste que ficou preso.</p>
+        {mineRecent.length === 0 ? (
+          <p className="fine">Nenhum drop de farm ainda.</p>
+        ) : (
+          <ul className="runs">
+            {mineRecent.map((row) => (
+              <li key={row.id} className="run-row">
+                <div>
+                  <strong>
+                    {row.itemName}
+                    <MarketLink name={row.itemName} />
+                  </strong>
+                  <b>{row.qty} × {formatZeny(row.price)} z = {formatZeny(row.qty * row.price)} z</b>
+                  <span>{row.day} · {row.location || "sem local"} · {formatWhen(row.at)}</span>
+                </div>
+                <button className="ghost slim" type="button" onClick={() => void removeLoot(row.id, row.itemName)}>
+                  Excluir
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="panel">
+        <h2>Suas últimas sessões</h2>
+        {mineSessions.length === 0 ? (
           <p className="fine">Nenhuma sessão finalizada ainda.</p>
         ) : (
           <ul className="runs">
-            {[...state.farmSessions].reverse().slice(0, 10).map((row) => (
-              <li key={row.id}>
-                <strong>{row.location}</strong>
-                <b>{formatDuration(row.ms)}</b>
-                <span>{NAMES[row.user]} · {formatWhen(row.at)}{row.capped ? " · teto" : ""}</span>
+            {[...mineSessions].reverse().slice(0, 10).map((row) => (
+              <li key={row.id} className="run-row">
+                <div>
+                  <strong>{row.location}</strong>
+                  <b>{formatDuration(row.ms)}</b>
+                  <span>{NAMES[row.user]} · {formatWhen(row.at)}{row.capped ? " · teto" : ""}</span>
+                </div>
+                <button className="ghost slim" type="button" onClick={() => void removeSession(row.id, row.location)}>
+                  Excluir
+                </button>
               </li>
             ))}
           </ul>
@@ -182,8 +263,7 @@ export function Farm({ state, now, viewer, act }: Props) {
       </section>
 
       <aside className="fine farm-note">
-        <img className="pixel-icon" src={CHARACTERS[viewer].gem} alt="" width={14} height={14} />
-        Os drops e sessões entram no Painel (zeny/dia, melhores drops e melhores locais).
+        Drops e sessões entram no seu Painel (zeny/dia, melhores drops e locais).
       </aside>
     </div>
   )

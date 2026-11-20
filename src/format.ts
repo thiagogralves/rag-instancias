@@ -61,6 +61,17 @@ export function dayKey(iso: string) {
   }).format(new Date(iso))
 }
 
+/** Dia civil em America/Sao_Paulo (YYYY-MM-DD). */
+export function todayKey(now = Date.now()) {
+  return dayKey(new Date(now).toISOString())
+}
+
+/** Meio-dia de São Paulo para um dia YYYY-MM-DD → ISO estável. */
+export function dayNoonIso(day: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return new Date().toISOString()
+  return new Date(`${day}T12:00:00-03:00`).toISOString()
+}
+
 export function elapsedMs(startedAt: number, base: number, now: number) {
   return Math.max(0, base + (now - startedAt))
 }
