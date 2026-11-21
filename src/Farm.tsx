@@ -19,10 +19,15 @@ export function Farm({ state, now, viewer, act }: Props) {
   const [qty, setQty] = useState("1")
   const [price, setPrice] = useState("")
   const [at, setAt] = useState(() => todayKey())
-  const [location, setLocation] = useState(state.activeFarm?.location || "")
+  const active = state.activeFarms?.[viewer] || null
+  const [location, setLocation] = useState(active?.location || "")
   const [remote, setRemote] = useState<CatalogItem[] | null>(null)
   const [catalogSize, setCatalogSize] = useState(0)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (active?.location) setLocation(active.location)
+  }, [active?.location])
 
   useEffect(() => {
     void ensureCatalogLoaded().then(() => setCatalogSize(getCatalogSize()))
@@ -58,7 +63,6 @@ export function Farm({ state, now, viewer, act }: Props) {
   const mineToday = mineFarm.filter((row) => row.day === today)
   const mineRecent = [...mineFarm].reverse().slice(0, 30)
   const mineSessions = sessions.filter((row) => row.user === viewer)
-  const active = state.activeFarm
 
   async function removeLoot(id: string, label: string) {
     await act(`farm-del-${id}`, { op: "deleteLoot", ids: [id] }, `${label} removido.`)
@@ -137,7 +141,7 @@ export function Farm({ state, now, viewer, act }: Props) {
             </button>
           )}
         </div>
-        {active && <p className="fine">{NAMES[active.user]} farmando em <b>{active.location}</b></p>}
+        {active && <p className="fine">Você farmando em <b>{active.location}</b></p>}
       </section>
 
       <section className="panel">

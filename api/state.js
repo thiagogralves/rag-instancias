@@ -39,8 +39,40 @@ function defaultState() {
     instanceExtras: {},
     loot: [],
     farmSessions: [],
-    activeFarm: null,
+    activeFarms: {},
   }
+}
+
+function normalizeActiveFarms(input) {
+  const out = {}
+  if (!input || typeof input !== "object") return out
+  // Legado: um único activeFarm com .user
+  if (input.user && input.startedAt && input.location) {
+    const person = input.user === "rafael" ? "rafael" : input.user === "thiago" ? "thiago" : null
+    if (!person) return out
+    out[person] = {
+      startedAt: Number(input.startedAt),
+      elapsedMs: Number(input.elapsedMs) || 0,
+      user: person,
+      location: String(input.location).slice(0, 80),
+    }
+    return out
+  }
+  for (const person of ["thiago", "rafael"]) {
+    const row = input[person]
+    if (!row || typeof row !== "object") continue
+    const startedAt = Number(row.startedAt)
+    if (!Number.isFinite(startedAt)) continue
+    const location = typeof row.location === "string" ? row.location.trim().slice(0, 80) : ""
+    if (!location) continue
+    out[person] = {
+      startedAt,
+      elapsedMs: Number(row.elapsedMs) || 0,
+      user: person,
+      location,
+    }
+  }
+  return out
 }
 
 function normalizeInstanceExtras(input, loot) {
@@ -151,7 +183,7 @@ function normalize(input) {
     instanceExtras: normalizeInstanceExtras(input.instanceExtras, loot),
     loot,
     farmSessions: Array.isArray(input.farmSessions) ? input.farmSessions : [],
-    activeFarm: input.activeFarm && typeof input.activeFarm === "object" ? input.activeFarm : null,
+    activeFarms: normalizeActiveFarms(input.activeFarms || input.activeFarm),
   }
 }
 
@@ -499,15 +531,17 @@ function apply(state, op, user) {
   }
 
   if (op.op === "farmTimerStart") {
-    if (state.activeFarm) return false
+    if (!state.activeFarms || typeof state.activeFarms !== "object") state.activeFarms = {}
+    if (state.activeFarms[user]) return false
     const location = typeof op.location === "string" ? op.location.trim().slice(0, 80) : ""
     if (!location) return false
-    state.activeFarm = { startedAt: Date.now(), elapsedMs: 0, user, location }
+    state.activeFarms[user] = { startedAt: Date.now(), elapsedMs: 0, user, location }
     return true
   }
 
   if (op.op === "farmTimerStop") {
-    const active = state.activeFarm
+    if (!state.activeFarms || typeof state.activeFarms !== "object") state.activeFarms = {}
+    const active = state.activeFarms[user]
     if (!active) return false
     const raw = Math.max(0, active.elapsedMs + (Date.now() - active.startedAt))
     state.farmSessions.push({
@@ -519,7 +553,7 @@ function apply(state, op, user) {
       startedAt: active.startedAt,
       capped: raw > CAP_MS,
     })
-    state.activeFarm = null
+    delete state.activeFarms[user]
     return true
   }
 

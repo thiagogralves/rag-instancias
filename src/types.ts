@@ -103,7 +103,8 @@ export type GameState = {
   instanceExtras: Record<string, InstanceExtra[]>
   loot: LootEntry[]
   farmSessions: FarmSession[]
-  activeFarm: ActiveFarm | null
+  /** Sessões de farm ativas por pessoa. */
+  activeFarms: Partial<Record<Person, ActiveFarm>>
 }
 
 export type Op =

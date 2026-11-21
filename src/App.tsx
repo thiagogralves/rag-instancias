@@ -359,12 +359,14 @@ export function App() {
     return () => window.clearInterval(id)
   }, [phase])
 
-  const activeCount = state ? Object.keys(state.active).length : 0
+  const liveTimerCount = state
+    ? Object.keys(state.active).length + Object.keys(state.activeFarms || {}).length
+    : 0
   useEffect(() => {
-    if (!activeCount) return
+    if (!liveTimerCount) return
     const id = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(id)
-  }, [activeCount])
+  }, [liveTimerCount])
 
   useEffect(() => {
     document.body.style.overflow = confirmReset || confirmSeal || wiki ? "hidden" : ""
