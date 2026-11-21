@@ -189,7 +189,7 @@ function DropRow({
         <span>{drop.crafts[0] || drop.detail}</span>
         {onRemove && (
           <button className="ghost slim danger-text" type="button" onClick={onRemove}>
-            Remover de hoje
+            Tirar da instância
           </button>
         )}
       </div>
@@ -199,7 +199,7 @@ function DropRow({
           inputMode="numeric"
           placeholder="qtd"
           value={qtyText}
-          title="Quantidade dropada hoje (zera amanhã na lista)"
+          title="Quantidade dropada hoje (zera no próximo ciclo)"
           onChange={(event) => setQtyText(event.target.value.replace(/\D/g, "").slice(0, 8))}
           onBlur={() => onSaveQty(Number(qtyText || 0))}
         />
@@ -897,7 +897,7 @@ export function App() {
                                 Drops de hoje · qtd + preço
                               </div>
                               {item.blurb && <p className="fine">{item.blurb}</p>}
-                              <p className="fine">Lista os drops conhecidos. Cartas e outros itens entram em “Outro drop”.</p>
+                              <p className="fine">Drops conhecidos e extras que vocês cadastraram. Extra fica na instância; a qtd zera no ciclo.</p>
                               {item.drops.map((drop) => {
                                 const todayLoot = (state.loot || []).find(
                                   (row) => row.source === "instance" && row.user === user && row.dropId === drop.id && row.day === today,
@@ -925,62 +925,53 @@ export function App() {
                                   />
                                 )
                               })}
-                              {(state.loot || [])
-                                .filter((row) =>
-                                  row.source === "instance" &&
-                                  row.user === user &&
-                                  row.instanceId === item.id &&
-                                  row.day === today &&
-                                  !item.drops.some((drop) => drop.id === row.dropId),
-                                )
-                                .map((row) => {
-                                  const dropId = row.dropId || extraDropId(row.itemId || 0)
+                              {(state.instanceExtras?.[item.id] || [])
+                                .filter((extra) => !item.drops.some((drop) => drop.id === extra.dropId))
+                                .map((extra) => {
+                                  const todayLoot = (state.loot || []).find(
+                                    (row) => row.source === "instance" && row.user === user && row.dropId === extra.dropId && row.day === today,
+                                  )
                                   const drop: Drop = {
-                                    id: dropId,
-                                    name: row.itemName,
-                                    detail: "Drop extra registrado hoje.",
+                                    id: extra.dropId,
+                                    name: extra.itemName,
+                                    detail: "Drop extra cadastrado nesta instância.",
                                     crafts: [],
-                                    itemId: row.itemId,
+                                    itemId: extra.itemId,
                                   }
                                   return (
                                     <DropRow
-                                      key={dropId}
+                                      key={extra.dropId}
                                       drop={drop}
-                                      price={state.prices[dropId] || row.price || 0}
-                                      qty={row.qty || 0}
-                                      onSavePrice={(value) => void act(dropId + "price", { op: "setPrice", dropId, price: value }, `Preço de ${drop.name} atualizado.`)}
+                                      price={state.prices[extra.dropId] || todayLoot?.price || 0}
+                                      qty={todayLoot?.qty || 0}
+                                      onSavePrice={(value) => void act(extra.dropId + "price", { op: "setPrice", dropId: extra.dropId, price: value }, `Preço de ${drop.name} atualizado.`)}
                                       onSaveQty={(value) => void act(
-                                        dropId + "qty",
+                                        extra.dropId + "qty",
                                         {
                                           op: "upsertDailyLoot",
-                                          dropId,
+                                          dropId: extra.dropId,
                                           instanceId: item.id,
                                           itemName: drop.name,
-                                          itemId: row.itemId,
+                                          itemId: extra.itemId,
                                           qty: value,
-                                          price: state.prices[dropId] || row.price || 0,
+                                          price: state.prices[extra.dropId] || 0,
                                         },
                                         value ? `Qtd de ${drop.name} hoje: ${value}.` : `Qtd de ${drop.name} zerada hoje.`,
                                       )}
                                       onRemove={() => void act(
-                                        dropId + "rm",
-                                        {
-                                          op: "upsertDailyLoot",
-                                          dropId,
-                                          instanceId: item.id,
-                                          itemName: drop.name,
-                                          itemId: row.itemId,
-                                          qty: 0,
-                                          price: 0,
-                                        },
-                                        `${drop.name} removido de hoje.`,
+                                        extra.dropId + "rm",
+                                        { op: "removeInstanceExtra", instanceId: item.id, dropId: extra.dropId },
+                                        `${drop.name} saiu da lista da instância.`,
                                       )}
                                     />
                                   )
                                 })}
                               <ExtraDropPicker
                                 instanceId={item.id}
-                                knownDropIds={new Set(item.drops.map((drop) => drop.id))}
+                                knownDropIds={new Set([
+                                  ...item.drops.map((drop) => drop.id),
+                                  ...(state.instanceExtras?.[item.id] || []).map((extra) => extra.dropId),
+                                ])}
                                 onPick={(picked) => {
                                   const dropId = extraDropId(picked.id)
                                   void act(
@@ -994,7 +985,7 @@ export function App() {
                                       qty: 1,
                                       price: state.prices[dropId] || 0,
                                     },
-                                    `${picked.name} adicionado aos drops de hoje.`,
+                                    `${picked.name} ficou na lista desta instância.`,
                                   )
                                 }}
                               />

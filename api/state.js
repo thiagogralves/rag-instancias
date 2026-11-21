@@ -35,10 +35,63 @@ function defaultState() {
     prices: {},
     watch: { thiago: [], rafael: [] },
     watchSeed: [],
+    /** Drops extras por instância (permanecem entre ciclos; qtd diária zera). */
+    instanceExtras: {},
     loot: [],
     farmSessions: [],
     activeFarm: null,
   }
+}
+
+function normalizeInstanceExtras(input, loot) {
+  const out = {}
+  if (input && typeof input === "object") {
+    for (const [instanceId, rows] of Object.entries(input)) {
+      if (!validInstance(instanceId) || !Array.isArray(rows)) continue
+      const list = []
+      const seen = new Set()
+      for (const row of rows) {
+        if (!row || typeof row !== "object") continue
+        const dropId = typeof row.dropId === "string" ? row.dropId : ""
+        const itemName = typeof row.itemName === "string" ? row.itemName.trim() : ""
+        if (!/^x-\d+$/.test(dropId) || !itemName || seen.has(dropId)) continue
+        seen.add(dropId)
+        const itemId = Number.isFinite(Number(row.itemId)) && Number(row.itemId) > 0 ? Math.round(Number(row.itemId)) : undefined
+        list.push({ dropId, itemName: itemName.slice(0, 120), itemId })
+      }
+      if (list.length) out[instanceId] = list
+    }
+  }
+  // Migra extras já registrados só no loot diário.
+  if (Array.isArray(loot)) {
+    for (const row of loot) {
+      if (row?.source !== "instance" || !validInstance(row.instanceId) || typeof row.dropId !== "string") continue
+      if (!/^x-\d+$/.test(row.dropId)) continue
+      const name = typeof row.itemName === "string" ? row.itemName.trim() : ""
+      if (!name) continue
+      if (!out[row.instanceId]) out[row.instanceId] = []
+      if (out[row.instanceId].some((item) => item.dropId === row.dropId)) continue
+      const itemId = Number.isFinite(Number(row.itemId)) && Number(row.itemId) > 0 ? Math.round(Number(row.itemId)) : undefined
+      out[row.instanceId].push({ dropId: row.dropId, itemName: name.slice(0, 120), itemId })
+    }
+  }
+  return out
+}
+
+function upsertInstanceExtra(state, instanceId, dropId, itemName, itemId) {
+  if (!/^x-\d+$/.test(dropId)) return
+  if (!state.instanceExtras || typeof state.instanceExtras !== "object") state.instanceExtras = {}
+  if (!Array.isArray(state.instanceExtras[instanceId])) state.instanceExtras[instanceId] = []
+  const list = state.instanceExtras[instanceId]
+  const entry = {
+    dropId,
+    itemName: String(itemName || "").trim().slice(0, 120),
+    itemId: Number.isFinite(Number(itemId)) && Number(itemId) > 0 ? Math.round(Number(itemId)) : undefined,
+  }
+  if (!entry.itemName) return
+  const idx = list.findIndex((row) => row.dropId === dropId)
+  if (idx >= 0) list[idx] = entry
+  else list.push(entry)
 }
 
 /**
@@ -81,6 +134,7 @@ function normalizeActive(input) {
 function normalize(input) {
   const base = defaultState()
   if (!input || typeof input !== "object") return base
+  const loot = Array.isArray(input.loot) ? input.loot : []
   return {
     version: Number(input.version) || 1,
     cycleDay: typeof input.cycleDay === "string" ? input.cycleDay : "",
@@ -94,7 +148,8 @@ function normalize(input) {
       rafael: Array.isArray(input.watch?.rafael) ? input.watch.rafael : [],
     },
     watchSeed: Array.isArray(input.watchSeed) ? input.watchSeed : [],
-    loot: Array.isArray(input.loot) ? input.loot : [],
+    instanceExtras: normalizeInstanceExtras(input.instanceExtras, loot),
+    loot,
     farmSessions: Array.isArray(input.farmSessions) ? input.farmSessions : [],
     activeFarm: input.activeFarm && typeof input.activeFarm === "object" ? input.activeFarm : null,
   }
@@ -131,19 +186,28 @@ async function redisCommand(command) {
 }
 
 async function readState() {
+  let parsed = null
   if (redisEnv()) {
     const raw = await redisCommand(["GET", "rag:state"])
     if (!raw) return defaultState()
-    return normalize(typeof raw === "string" ? JSON.parse(raw) : raw)
+    parsed = typeof raw === "string" ? JSON.parse(raw) : raw
+  } else {
+    try {
+      parsed = JSON.parse(await fs.readFile(FILE, "utf8"))
+    } catch {
+      return defaultState()
+    }
   }
-  try {
-    return normalize(JSON.parse(await fs.readFile(FILE, "utf8")))
-  } catch {
-    return defaultState()
+  const state = normalize(parsed)
+  // Persiste migração de extras que só existiam no loot diário.
+  if (JSON.stringify(parsed?.instanceExtras || {}) !== JSON.stringify(state.instanceExtras || {})) {
+    state._persist = true
   }
+  return state
 }
 
 async function writeState(state) {
+  delete state._persist
   if (redisEnv()) {
     await redisCommand(["SET", "rag:state", JSON.stringify(state)])
     return
@@ -340,6 +404,8 @@ function apply(state, op, user) {
     const day = cycleKey(new Date(at).getTime())
     const itemId = Number.isFinite(Number(op.itemId)) && Number(op.itemId) > 0 ? Math.round(Number(op.itemId)) : undefined
     if (price > 0) state.prices[op.dropId] = price
+    // Extra (x-*) fica cadastrado na instância entre ciclos; só a qtd do dia zera.
+    upsertInstanceExtra(state, op.instanceId, op.dropId, op.itemName, itemId)
     const idx = state.loot.findIndex(
       (row) => row.source === "instance" && row.user === user && row.dropId === op.dropId && row.day === day,
     )
@@ -362,6 +428,18 @@ function apply(state, op, user) {
     }
     if (idx >= 0) state.loot[idx] = entry
     else state.loot.push(entry)
+    return true
+  }
+
+  if (op.op === "removeInstanceExtra") {
+    if (!validInstance(op.instanceId)) return false
+    if (typeof op.dropId !== "string" || !/^x-\d+$/.test(op.dropId)) return false
+    const list = state.instanceExtras?.[op.instanceId]
+    if (!Array.isArray(list) || !list.length) return false
+    const next = list.filter((row) => row.dropId !== op.dropId)
+    if (next.length === list.length) return false
+    if (next.length) state.instanceExtras[op.instanceId] = next
+    else delete state.instanceExtras[op.instanceId]
     return true
   }
 
@@ -461,7 +539,8 @@ export async function handleState(method, emailHeader, body) {
       const state = await enqueue(() =>
         withLock(async () => {
           const current = await readState()
-          if (rollCycle(current)) {
+          const dirty = rollCycle(current) || Boolean(current._persist)
+          if (dirty) {
             current.version = (Number(current.version) || 1) + 1
             await writeState(current)
           }
@@ -475,7 +554,7 @@ export async function handleState(method, emailHeader, body) {
     const result = await enqueue(() =>
       withLock(async () => {
         const current = await readState()
-        const rolled = rollCycle(current)
+        const rolled = rollCycle(current) || Boolean(current._persist)
         const changed = apply(current, body, user)
         if (!rolled && !changed) return { state: current, changed: false }
         current.version = (Number(current.version) || 1) + 1

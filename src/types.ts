@@ -80,6 +80,12 @@ export type ActiveFarm = {
   location: string
 }
 
+export type InstanceExtra = {
+  dropId: string
+  itemName: string
+  itemId?: number
+}
+
 export type GameState = {
   version: number
   /** Dia do ciclo atual (YYYY-MM-DD), virando às 04:00 America/Sao_Paulo. */
@@ -93,6 +99,8 @@ export type GameState = {
   watch: Record<Person, string[]>
   /** Prioridade pessoal do Thiago (semente de Ygg). */
   watchSeed: string[]
+  /** Drops extras cadastrados na instância (permanecem; qtd diária zera). */
+  instanceExtras: Record<string, InstanceExtra[]>
   loot: LootEntry[]
   farmSessions: FarmSession[]
   activeFarm: ActiveFarm | null
@@ -108,6 +116,7 @@ export type Op =
   | { op: "setPrice"; dropId: string; price: number }
   | { op: "setPrices"; items: { dropId: string; price: number }[] }
   | { op: "upsertDailyLoot"; dropId: string; instanceId: string; itemName: string; itemId?: number; qty: number; price: number; at?: string }
+  | { op: "removeInstanceExtra"; instanceId: string; dropId: string }
   | { op: "addFarmLoot"; itemName: string; itemId?: number; qty: number; price: number; location?: string; at?: string }
   | { op: "deleteHistory"; ids: string[] }
   | { op: "deleteRuns"; ids: string[] }
