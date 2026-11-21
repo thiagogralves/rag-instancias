@@ -20,8 +20,13 @@ const SEED: CatalogItem[] = [
   { id: 1000706, name: "Núcleo Mágico Purificado" },
   { id: 1000707, name: "Núcleo Mágico Rgan de Baixa Qualidade" },
   { id: 1000811, name: "Minério Mágico da Flor de Neve" },
+  { id: 7110, name: "Espada Chanfrada", npcSell: 220 },
+  { id: 1000322, name: "Pó de Éter" },
+  { id: 25159, name: "Selo da Caça-Coração", npcSell: 250 },
+  { id: 25730, name: "Minério de Zelunium" },
+  { id: 25731, name: "Zelunium" },
   { id: 1000822, name: "Casco Rgan" },
-  { id: 1000823, name: "Célula Monstruosa" },
+  { id: 1000823, name: "Célula de Criatura Estranha" },
   { id: 1000825, name: "Calapi" },
   { id: 1000826, name: "Casco Espinhoso" },
   { id: 1000829, name: "Flor-Sino de Isca" },
@@ -65,7 +70,11 @@ function merge(items: CatalogItem[]) {
   for (const item of catalog) byId.set(item.id, item)
   for (const item of items) {
     if (!item.id || !item.name) continue
-    byId.set(item.id, item)
+    const prev = byId.get(item.id)
+    const next: CatalogItem = { id: item.id, name: item.name }
+    const npcSell = item.npcSell ?? prev?.npcSell
+    if (npcSell && npcSell > 0) next.npcSell = npcSell
+    byId.set(item.id, next)
   }
   catalog = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
 }
@@ -102,6 +111,12 @@ export function ensureCatalogLoaded(): Promise<void> {
 
 export function getCatalogSize() {
   return catalog.length
+}
+
+export function getCatalogItem(id: number | undefined): CatalogItem | undefined {
+  if (!id) return undefined
+  void ensureCatalogLoaded()
+  return catalog.find((item) => item.id === id)
 }
 
 export function searchCatalog(query: string, limit = 40): CatalogItem[] {

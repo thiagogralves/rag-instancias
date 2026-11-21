@@ -25,24 +25,51 @@ function loadYml(filePath) {
     const id = Number(block.match(/^(\d+)/)?.[1])
     const name = block.match(/\n    Name: (.+)/)?.[1]?.trim()
     if (!id || !name) continue
-    rows.push({ id, name })
+    const sellRaw = block.match(/\n    Sell: (\d+)/)?.[1]
+    const buyRaw = block.match(/\n    Buy: (\d+)/)?.[1]
+    const sell = sellRaw != null ? Number(sellRaw) : null
+    const buy = buyRaw != null ? Number(buyRaw) : null
+    let npcSell
+    if (Number.isFinite(sell) && sell > 0) npcSell = sell
+    else if (Number.isFinite(buy) && buy > 0) npcSell = Math.floor(buy / 2)
+    const row = { id, name }
+    if (npcSell && npcSell > 0) row.npcSell = npcSell
+    rows.push(row)
   }
   return rows
 }
 
+function mergeItem(prev, next) {
+  const out = { id: next.id, name: next.name || prev?.name }
+  const npcSell = next.npcSell ?? prev?.npcSell
+  if (npcSell && npcSell > 0) out.npcSell = npcSell
+  return out
+}
+
 const byId = new Map()
 
-// Base inglesa (IRO + rAthena yml — inclui Ep. 19+)
-for (const item of loadTxt(path.join(root, "tmp-ro/items-iro.txt"))) byId.set(item.id, item)
+function put(item) {
+  if (!item?.id || !item.name) return
+  const prev = byId.get(item.id)
+  byId.set(item.id, prev ? mergeItem(prev, item) : { ...item })
+}
+
+// Base inglesa (IRO + rAthena yml — inclui Ep. 19+ e Buy/Sell)
+for (const item of loadTxt(path.join(root, "tmp-ro/items-iro.txt"))) put(item)
 for (const file of ["item_db_etc.yml", "item_db_usable.yml", "item_db_equip.yml", "item_db.yml"]) {
-  for (const item of loadYml(path.join(root, "tmp-ro", file))) byId.set(item.id, item)
+  for (const item of loadYml(path.join(root, "tmp-ro", file))) put(item)
 }
 
 // Nomes PT do client bRO sobrescrevem quando existem
-for (const item of loadTxt(path.join(root, "tmp-ro/items.txt"))) byId.set(item.id, item)
+for (const item of loadTxt(path.join(root, "tmp-ro/items.txt"))) put(item)
 
-// Curadoria PT (Issgard / Ep. 19 e drops do board)
+// Curadoria PT + npcSell conhecidos do client/DP quando o yml diverge
 const curated = [
+  { id: 7110, name: "Espada Chanfrada", npcSell: 220 },
+  { id: 1000322, name: "Pó de Éter" },
+  { id: 25159, name: "Selo da Caça-Coração", npcSell: 250 },
+  { id: 25730, name: "Minério de Zelunium" },
+  { id: 25731, name: "Zelunium" },
   { id: 1000606, name: "Casca de Ovo Rgan Superior" },
   { id: 1000608, name: "Pétala de Flor Invernal" },
   { id: 1000705, name: "Núcleo Mágico Rgan" },
@@ -53,7 +80,7 @@ const curated = [
   { id: 1000813, name: "Gema Brilhante da Flor de Neve" },
   { id: 1000814, name: "Manastone Brilhante da Flor de Neve" },
   { id: 1000822, name: "Casco Rgan" },
-  { id: 1000823, name: "Célula Monstruosa" },
+  { id: 1000823, name: "Célula de Criatura Estranha" },
   { id: 1000825, name: "Calapi" },
   { id: 1000826, name: "Casco Espinhoso" },
   { id: 1000828, name: "Casco Transparente" },
@@ -93,13 +120,14 @@ const curated = [
   { id: 7326, name: "Líquido Fluorescente" },
 ]
 
-for (const item of curated) byId.set(item.id, item)
+for (const item of curated) put(item)
 
 const catalog = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
 fs.writeFileSync(path.join(root, "api/items-catalog.json"), JSON.stringify(catalog))
 fs.mkdirSync(path.join(root, "public/ro"), { recursive: true })
 fs.writeFileSync(path.join(root, "public/ro/items-catalog.json"), JSON.stringify(catalog))
 console.log("catalog", catalog.length)
-for (const id of [1000705, 1000707, 1000822, 1000823, 1000825, 1000829, 1000830]) {
-  console.log(id, byId.get(id)?.name)
+for (const id of [7110, 1000322, 25159, 25730, 1000823, 1000705, 1000822]) {
+  const row = byId.get(id)
+  console.log(id, row?.name, row?.npcSell ?? "-")
 }

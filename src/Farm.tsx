@@ -3,7 +3,7 @@ import type { CatalogItem, GameState, Op, Person } from "./types"
 import { itemIcon } from "./characters"
 import { dayNoonIso, elapsedMs, formatClock, formatDuration, formatWhen, formatZeny, NAMES, todayKey } from "./format"
 import { MarketLink } from "./market/MarketLink"
-import { ensureCatalogLoaded, getCatalogSize, searchCatalog } from "./items-catalog"
+import { ensureCatalogLoaded, getCatalogItem, getCatalogSize, searchCatalog } from "./items-catalog"
 import { RO } from "./ro"
 
 type Props = {
@@ -162,7 +162,12 @@ export function Farm({ state, now, viewer, act }: Props) {
                 key={item.id}
                 type="button"
                 className={`item-opt${selected ? " on" : ""}`}
-                onClick={() => setPicked(item)}
+                onClick={() =>
+                  setPicked({
+                    ...item,
+                    npcSell: item.npcSell ?? getCatalogItem(item.id)?.npcSell,
+                  })
+                }
               >
                 {icon ? <img className="pixel-icon" src={icon} alt="" width={22} height={22} /> : <img className="pixel-icon" src={RO.purpleBox} alt="" width={22} height={22} />}
                 <span>{item.name}</span>
@@ -180,7 +185,7 @@ export function Farm({ state, now, viewer, act }: Props) {
             <input inputMode="numeric" value={qty} onChange={(event) => setQty(event.target.value.replace(/\D/g, "").slice(0, 8))} />
           </label>
           <label>
-            Preço unit.
+            Preço unit. (jogador)
             <input inputMode="numeric" value={price} placeholder="zeny" onChange={(event) => setPrice(event.target.value.replace(/\D/g, "").slice(0, 15))} />
           </label>
           <label>
@@ -188,6 +193,16 @@ export function Farm({ state, now, viewer, act }: Props) {
             <input type="date" value={at} onChange={(event) => setAt(event.target.value || today)} />
           </label>
         </div>
+        {picked?.npcSell && picked.npcSell > 0 && Number(price || 0) !== picked.npcSell && (
+          <button
+            className="ghost slim npc-price"
+            type="button"
+            title="Usar preço de venda NPC do jogo"
+            onClick={() => setPrice(String(picked.npcSell))}
+          >
+            Usar NPC {formatZeny(picked.npcSell)}z
+          </button>
+        )}
         <button className="primary" type="button" disabled={!picked || saving || !Number(qty)} onClick={() => void addLoot()}>
           {saving ? "Salvando…" : `Adicionar ${picked ? picked.name : "item"}`}
         </button>

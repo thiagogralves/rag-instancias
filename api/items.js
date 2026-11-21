@@ -45,10 +45,16 @@ async function divineSearch(q, limit) {
   const rows = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : []
   return rows
     .slice(0, limit)
-    .map((row) => ({
-      id: Number(row.id),
-      name: String(row.name || row.aegisName || `Item #${row.id}`),
-    }))
+    .map((row) => {
+      const id = Number(row.id)
+      const local = CATALOG.find((item) => item.id === id)
+      const out = {
+        id,
+        name: String(row.name || row.aegisName || local?.name || `Item #${id}`),
+      }
+      if (local?.npcSell > 0) out.npcSell = local.npcSell
+      return out
+    })
     .filter((row) => Number.isFinite(row.id) && row.id > 0)
 }
 

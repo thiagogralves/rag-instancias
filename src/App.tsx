@@ -15,7 +15,7 @@ import { CHARACTERS, itemIcon } from "./characters"
 import { INSTANCES, SHARED_DROPS } from "./data"
 import { elapsedMs, formatClock, formatDuration, formatWhen, formatZeny, NAMES, personFromEmail, roleLabel, todayKey } from "./format"
 import { extraDropId, parseExtraItemId, resolveDropItemId } from "./itemIds"
-import { ensureCatalogLoaded, searchCatalog } from "./items-catalog"
+import { ensureCatalogLoaded, getCatalogItem, searchCatalog } from "./items-catalog"
 import { FILTER_ICON, RO, SECTION_ICON } from "./ro"
 import type { CatalogItem, Drop, GameState, Op, Person } from "./types"
 
@@ -96,7 +96,17 @@ function PixelIcon({ src, alt = "", size = 22 }: { src: string; alt?: string; si
   )
 }
 
-function PriceField({ id, price, onSave }: { id: string; price: number; onSave: (value: number) => void }) {
+function PriceField({
+  id,
+  price,
+  npcSell,
+  onSave,
+}: {
+  id: string
+  price: number
+  npcSell?: number
+  onSave: (value: number) => void
+}) {
   const [text, setText] = useState(price ? String(price) : "")
   const focused = useRef(false)
   const saved = useRef(price)
@@ -129,17 +139,18 @@ function PriceField({ id, price, onSave }: { id: string; price: number; onSave: 
   }, [])
 
   const numeric = Number(text || 0)
+  const canUseNpc = Boolean(npcSell && npcSell > 0 && npcSell !== numeric)
   return (
     <label className="price-mini">
-      <span className="sr">Preço em zeny</span>
+      <span className="sr">Preço jogador em zeny</span>
       <span className="price-field">
         <PixelIcon src={RO.goldCoin} size={14} />
         <input
           inputMode="numeric"
           autoComplete="off"
-          placeholder="0"
+          placeholder="jogador"
           value={text}
-          title={SHARED_DROPS.has(id) ? "Preço único em todas as instâncias deste item" : "Preço em zeny"}
+          title={SHARED_DROPS.has(id) ? "Preço jogador (único em todas as instâncias deste item)" : "Preço de venda pra jogador"}
           onFocus={() => {
             focused.current = true
           }}
@@ -151,6 +162,21 @@ function PriceField({ id, price, onSave }: { id: string; price: number; onSave: 
         />
       </span>
       {numeric > 0 && <em>{formatZeny(numeric)} z</em>}
+      {canUseNpc && (
+        <button
+          className="ghost slim npc-price"
+          type="button"
+          title="Usar preço de venda NPC do jogo"
+          onClick={() => {
+            const value = npcSell!
+            setText(String(value))
+            saved.current = value
+            onSave(value)
+          }}
+        >
+          NPC {formatZeny(npcSell!)}z
+        </button>
+      )}
     </label>
   )
 }
@@ -173,6 +199,7 @@ function DropRow({
   const [qtyText, setQtyText] = useState(qty ? String(qty) : "")
   const itemId = resolveDropItemId(drop.id, drop.itemId) || parseExtraItemId(drop.id)
   const icon = itemIcon(itemId)
+  const npcSell = getCatalogItem(itemId)?.npcSell
   useEffect(() => {
     setQtyText(qty ? String(qty) : "")
   }, [qty])
@@ -204,7 +231,7 @@ function DropRow({
           onBlur={() => onSaveQty(Number(qtyText || 0))}
         />
       </label>
-      <PriceField id={drop.id} price={price} onSave={onSavePrice} />
+      <PriceField id={drop.id} price={price} npcSell={npcSell} onSave={onSavePrice} />
     </div>
   )
 }
@@ -297,12 +324,17 @@ export function App() {
   const [loginError, setLoginError] = useState("")
   const [busyLogin, setBusyLogin] = useState(false)
   const [now, setNow] = useState(Date.now())
+  const [, setCatalogTick] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
   const version = useRef(0)
   const saving = useRef(0)
   const inflight = useRef(new Set<string>())
   const emailRef = useRef(email)
   emailRef.current = email
+
+  useEffect(() => {
+    void ensureCatalogLoaded().then(() => setCatalogTick((n) => n + 1))
+  }, [])
 
   function accept(next: GameState) {
     if (next.version < version.current) return

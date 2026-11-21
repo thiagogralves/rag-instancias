@@ -562,6 +562,17 @@ img { display: block; max-width: 100%; }
   padding: 0; font-size: 0.82rem; text-align: right; font-family: var(--font-mono);
 }
 .price-mini em { font-style: normal; color: var(--gold); font-size: 0.68rem; }
+.price-mini .npc-price {
+  min-height: 22px;
+  padding: 0 7px;
+  font-size: 0.68rem;
+  color: var(--muted);
+  border-color: rgba(255, 214, 102, 0.22);
+}
+.price-mini .npc-price:hover {
+  color: var(--gold);
+  border-color: rgba(255, 214, 102, 0.4);
+}
 
 .side { display: none; }
 .char-card {

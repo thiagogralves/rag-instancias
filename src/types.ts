@@ -130,4 +130,6 @@ export type Op =
 export type CatalogItem = {
   id: number
   name: string
+  /** Preço de venda NPC (zeny), quando conhecido na base. */
+  npcSell?: number
 }
