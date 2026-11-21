@@ -35,6 +35,27 @@ function defaultState() {
   }
 }
 
+function activeKey(instanceId, user) {
+  return `${instanceId}:${user}`
+}
+
+function normalizeActive(input) {
+  const out = {}
+  if (!input || typeof input !== "object") return out
+  for (const [key, value] of Object.entries(input)) {
+    if (!value || typeof value !== "object") continue
+    const startedAt = Number(value.startedAt)
+    const elapsedMs = Number(value.elapsedMs) || 0
+    const person = value.user === "rafael" ? "rafael" : value.user === "thiago" ? "thiago" : null
+    if (!person || !Number.isFinite(startedAt)) continue
+    // Novo: "inst_24:thiago" — legado: "inst_24" com user no valor
+    const instanceId = key.includes(":") ? key.slice(0, key.lastIndexOf(":")) : key
+    if (!validInstance(instanceId)) continue
+    out[activeKey(instanceId, person)] = { startedAt, elapsedMs, user: person }
+  }
+  return out
+}
+
 function normalize(input) {
   const base = defaultState()
   if (!input || typeof input !== "object") return base
@@ -43,7 +64,7 @@ function normalize(input) {
     completions: input.completions && typeof input.completions === "object" ? input.completions : {},
     history: Array.isArray(input.history) ? input.history : [],
     runs: Array.isArray(input.runs) ? input.runs : [],
-    active: input.active && typeof input.active === "object" ? input.active : {},
+    active: normalizeActive(input.active),
     prices: input.prices && typeof input.prices === "object" ? input.prices : {},
     watch: {
       thiago: Array.isArray(input.watch?.thiago) ? input.watch.thiago : [],
@@ -230,14 +251,16 @@ function apply(state, op, user) {
 
   if (op.op === "timerStart") {
     if (!validInstance(op.instanceId)) return false
-    if (state.active[op.instanceId]) return false
-    state.active[op.instanceId] = { startedAt: Date.now(), elapsedMs: 0, user }
+    const key = activeKey(op.instanceId, user)
+    if (state.active[key]) return false
+    state.active[key] = { startedAt: Date.now(), elapsedMs: 0, user }
     return true
   }
 
   if (op.op === "timerStop") {
     if (!validInstance(op.instanceId)) return false
-    const active = state.active[op.instanceId]
+    const key = activeKey(op.instanceId, user)
+    const active = state.active[key]
     if (!active) return false
     const raw = Math.max(0, active.elapsedMs + (Date.now() - active.startedAt))
     state.runs.push({
@@ -248,7 +271,7 @@ function apply(state, op, user) {
       at: new Date().toISOString(),
       capped: raw > CAP_MS,
     })
-    delete state.active[op.instanceId]
+    delete state.active[key]
     return true
   }
 

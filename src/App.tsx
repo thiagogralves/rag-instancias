@@ -23,6 +23,15 @@ type FilterId = "all" | "watch" | "pending" | "horas" | "diario" | "tres" | "sem
 type LevelFilterId = "all" | "lt100" | "100-129" | "130-159" | "160-179" | "180-199" | "200plus"
 type TabId = "board" | "dash" | "farm"
 
+function timerKey(instanceId: string, person: Person) {
+  return `${instanceId}:${person}`
+}
+
+function instanceIdFromTimerKey(key: string) {
+  const at = key.lastIndexOf(":")
+  return at > 0 ? key.slice(0, at) : key
+}
+
 type SealConfirm = {
   instanceId: string
   name: string
@@ -474,28 +483,34 @@ export function App() {
   const running = useMemo(() => {
     if (!state) return []
     return Object.entries(state.active)
-      .map(([id, active]) => ({ id, active, name: INSTANCES.find((item) => item.id === id)?.name || id }))
+      .map(([key, active]) => {
+        const id = instanceIdFromTimerKey(key)
+        return {
+          key,
+          id,
+          active,
+          mine: Boolean(user && active.user === user),
+          name: INSTANCES.find((item) => item.id === id)?.name || id,
+        }
+      })
       .sort((a, b) => a.active.startedAt - b.active.startedAt)
-  }, [state])
+  }, [state, user])
 
   const doneMine = useMemo(() => {
     if (!state || !user) return 0
     return INSTANCES.filter((item) => state.completions[item.id]?.[user]).length
   }, [state, user])
 
-  const avgMsByInstance = useMemo(() => {
-    const map = new Map<string, { sum: number; count: number }>()
-    for (const run of state?.runs || []) {
-      if (!(run.ms > 0)) continue
-      const cur = map.get(run.instanceId) || { sum: 0, count: 0 }
-      cur.sum += run.ms
-      cur.count += 1
-      map.set(run.instanceId, cur)
-    }
+  const bestMsByInstance = useMemo(() => {
+    if (!user) return new Map<string, number>()
     const out = new Map<string, number>()
-    for (const [id, cur] of map) out.set(id, Math.round(cur.sum / cur.count))
+    for (const run of state?.runs || []) {
+      if (run.user !== user || !(run.ms > 0)) continue
+      const cur = out.get(run.instanceId)
+      if (cur == null || run.ms < cur) out.set(run.instanceId, run.ms)
+    }
     return out
-  }, [state?.runs])
+  }, [state?.runs, user])
 
   if (phase === "boot" || (phase === "in" && !state)) {
     return (
@@ -703,9 +718,16 @@ export function App() {
 
                   {filtered.map((item) => {
                     const done = state.completions[item.id] || {}
-                    const active = state.active[item.id]
-                    const last = [...state.runs].reverse().find((run) => run.instanceId === item.id)
-                    const avgMs = avgMsByInstance.get(item.id)
+                    const active = state.active[timerKey(item.id, user)]
+                    const otherLive = people
+                      .filter((person) => person !== user)
+                      .map((person) => {
+                        const timer = state.active[timerKey(item.id, person)]
+                        return timer ? { person, timer } : null
+                      })
+                      .filter(Boolean) as { person: Person; timer: NonNullable<typeof active> }[]
+                    const last = [...state.runs].reverse().find((run) => run.instanceId === item.id && run.user === user)
+                    const bestMs = bestMsByInstance.get(item.id)
                     const both = Boolean(done.thiago && done.rafael)
                     const fruited = state.watch.thiago.includes(item.id) || state.watch.rafael.includes(item.id)
                     const seeded = user === "thiago" && (state.watchSeed || []).includes(item.id)
@@ -762,9 +784,9 @@ export function App() {
                               </span>
                               <span className="pill">Nv. {item.nivel}</span>
                               <span className="pill">{item.modo}</span>
-                              {avgMs != null && (
-                                <span className="pill avg" title="Tempo médio das corridas registradas">
-                                  Média {formatDuration(avgMs)}
+                              {bestMs != null && (
+                                <span className="pill avg" title="Seu melhor tempo nesta instância">
+                                  Melhor {formatDuration(bestMs)}
                                 </span>
                               )}
                             </div>
@@ -840,13 +862,20 @@ export function App() {
                         </div>
 
                         {active && (
-                          <p className="last">{roleLabel(active.user)} na instância agora{live > 8 * 60 * 60 * 1000 ? " · teto 8h" : ""}{avgMs != null ? ` · média ${formatDuration(avgMs)}` : ""}</p>
+                          <p className="last">Você na instância agora{live > 8 * 60 * 60 * 1000 ? " · teto 8h" : ""}{bestMs != null ? ` · melhor ${formatDuration(bestMs)}` : ""}</p>
                         )}
-                        {!active && (avgMs != null || last) && (
+                        {!active && otherLive.length > 0 && (
                           <p className="last">
-                            {avgMs != null ? `Média ${formatDuration(avgMs)}` : null}
-                            {avgMs != null && last ? " · " : null}
-                            {last ? `Última ${formatDuration(last.ms)} · ${roleLabel(last.user)}${last.capped ? " · teto" : ""}` : null}
+                            {otherLive.map(({ person, timer }) =>
+                              `${roleLabel(person)} rodando ${formatClock(elapsedMs(timer.startedAt, timer.elapsedMs, now))}`,
+                            ).join(" · ")}
+                          </p>
+                        )}
+                        {!active && otherLive.length === 0 && (bestMs != null || last) && (
+                          <p className="last">
+                            {bestMs != null ? `Melhor ${formatDuration(bestMs)}` : null}
+                            {bestMs != null && last ? " · " : null}
+                            {last ? `Última ${formatDuration(last.ms)}${last.capped ? " · teto" : ""}` : null}
                           </p>
                         )}
 
@@ -999,15 +1028,17 @@ export function App() {
           {running.map((item) => {
             const live = elapsedMs(item.active.startedAt, item.active.elapsedMs, now)
             return (
-              <article key={item.id}>
+              <article key={item.key}>
                 <p>
                   <PixelIcon src={RO.redGem} size={16} />
                   <strong>{item.name}</strong>
                   <small className="clock"> · {formatClock(live)} · {roleLabel(item.active.user)}</small>
                 </p>
-                <button type="button" onClick={() => void act(item.id + "stop", { op: "timerStop", instanceId: item.id }, `Cronômetro de ${item.name} parado.`)}>
-                  Parar
-                </button>
+                {item.mine ? (
+                  <button type="button" onClick={() => void act(item.key + "stop", { op: "timerStop", instanceId: item.id }, `Cronômetro de ${item.name} parado.`)}>
+                    Parar
+                  </button>
+                ) : null}
               </article>
             )
           })}

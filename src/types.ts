@@ -85,6 +85,7 @@ export type GameState = {
   completions: Record<string, Partial<Record<Person, string>>>
   history: HistoryEvent[]
   runs: Run[]
+  /** Cronômetros ativos. Chave: `${instanceId}:${Person}` — cada um só controla o próprio. */
   active: Record<string, ActiveTimer>
   prices: Record<string, number>
   watch: Record<Person, string[]>
