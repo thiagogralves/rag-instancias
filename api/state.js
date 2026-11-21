@@ -19,9 +19,15 @@ function dayKey(iso) {
   }).format(new Date(iso))
 }
 
+/** Ciclo do board: vira todo dia às 04:00 em America/Sao_Paulo. */
+function cycleKey(now = Date.now()) {
+  return dayKey(new Date(now - 4 * 60 * 60 * 1000).toISOString())
+}
+
 function defaultState() {
   return {
     version: 1,
+    cycleDay: cycleKey(),
     completions: {},
     history: [],
     runs: [],
@@ -33,6 +39,22 @@ function defaultState() {
     farmSessions: [],
     activeFarm: null,
   }
+}
+
+/**
+ * Novo ciclo às 4h: limpa só os selos pra poder marcar de novo.
+ * Histórico, runs, loot, preços e prioridades ficam no painel.
+ */
+function rollCycle(state) {
+  const current = cycleKey()
+  if (!state.cycleDay) {
+    state.cycleDay = current
+    return true
+  }
+  if (state.cycleDay === current) return false
+  state.completions = {}
+  state.cycleDay = current
+  return true
 }
 
 function activeKey(instanceId, user) {
@@ -61,6 +83,7 @@ function normalize(input) {
   if (!input || typeof input !== "object") return base
   return {
     version: Number(input.version) || 1,
+    cycleDay: typeof input.cycleDay === "string" ? input.cycleDay : "",
     completions: input.completions && typeof input.completions === "object" ? input.completions : {},
     history: Array.isArray(input.history) ? input.history : [],
     runs: Array.isArray(input.runs) ? input.runs : [],
@@ -314,7 +337,7 @@ function apply(state, op, user) {
     const price = clampMoney(op.price)
     if (qty === null || price === null) return false
     const at = typeof op.at === "string" && !Number.isNaN(Date.parse(op.at)) ? new Date(op.at).toISOString() : new Date().toISOString()
-    const day = dayKey(at)
+    const day = cycleKey(new Date(at).getTime())
     const itemId = Number.isFinite(Number(op.itemId)) && Number(op.itemId) > 0 ? Math.round(Number(op.itemId)) : undefined
     if (price > 0) state.prices[op.dropId] = price
     const idx = state.loot.findIndex(
@@ -360,7 +383,7 @@ function apply(state, op, user) {
       qty,
       price,
       at,
-      day: dayKey(at),
+      day: cycleKey(new Date(at).getTime()),
     })
     return true
   }
@@ -435,7 +458,16 @@ export async function handleState(method, emailHeader, body) {
 
   try {
     if (method === "GET") {
-      const state = await enqueue(() => readState())
+      const state = await enqueue(() =>
+        withLock(async () => {
+          const current = await readState()
+          if (rollCycle(current)) {
+            current.version = (Number(current.version) || 1) + 1
+            await writeState(current)
+          }
+          return current
+        }),
+      )
       return { status: 200, data: { user, state } }
     }
     if (method !== "POST") return { status: 405, data: { error: "method" } }
@@ -443,12 +475,13 @@ export async function handleState(method, emailHeader, body) {
     const result = await enqueue(() =>
       withLock(async () => {
         const current = await readState()
+        const rolled = rollCycle(current)
         const changed = apply(current, body, user)
-        if (!changed) return { state: current, changed: false }
+        if (!rolled && !changed) return { state: current, changed: false }
         current.version = (Number(current.version) || 1) + 1
         trimState(current)
         await writeState(current)
-        return { state: current, changed: true }
+        return { state: current, changed: rolled || changed }
       }),
     )
     return { status: 200, data: { user, state: result.state, changed: result.changed } }

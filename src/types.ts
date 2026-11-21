@@ -82,6 +82,8 @@ export type ActiveFarm = {
 
 export type GameState = {
   version: number
+  /** Dia do ciclo atual (YYYY-MM-DD), virando às 04:00 America/Sao_Paulo. */
+  cycleDay: string
   completions: Record<string, Partial<Record<Person, string>>>
   history: HistoryEvent[]
   runs: Run[]

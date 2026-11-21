@@ -594,9 +594,9 @@ export function App() {
               <b><CountUp to={doneMine} duration={0.7} trigger="load" /></b>
               <small>selos / {INSTANCES.length}</small>
             </div>
-            <div className="stat-pill">
+            <div className="stat-pill" title="Ciclo vira todo dia às 4h (Brasília). Selos zeram; histórico fica no painel.">
               <b className="mono">{progress}%</b>
-              <small>ciclo</small>
+              <small>ciclo · 4h</small>
             </div>
             <div className="stat-pill">
               <b><CountUp to={mine} duration={0.7} trigger="load" /></b>
@@ -1067,7 +1067,7 @@ export function App() {
           <button className="sheet-backdrop" type="button" aria-label="Fechar" onClick={() => setConfirmReset(false)} />
           <div className="sheet">
             <h2 id="reset-titulo">Limpar os selos?</h2>
-            <p className="lede">Tira as marcas do ciclo. O histórico do painel continua.</p>
+            <p className="lede">Tira as marcas deste ciclo. Às 4h (Brasília) isso acontece sozinho — histórico, tempos e loot ficam no painel.</p>
             <button className="ghost" type="button" onClick={() => setConfirmReset(false)}>Cancelar</button>
             <button
               className="danger"

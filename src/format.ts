@@ -61,9 +61,14 @@ export function dayKey(iso: string) {
   }).format(new Date(iso))
 }
 
-/** Dia civil em America/Sao_Paulo (YYYY-MM-DD). */
+/** Ciclo do board: vira todo dia às 04:00 em America/Sao_Paulo. */
+export function cycleKey(now = Date.now()) {
+  return dayKey(new Date(now - 4 * 60 * 60 * 1000).toISOString())
+}
+
+/** Dia do ciclo atual (YYYY-MM-DD), não o dia civil à meia-noite. */
 export function todayKey(now = Date.now()) {
-  return dayKey(new Date(now).toISOString())
+  return cycleKey(now)
 }
 
 /** Meio-dia de São Paulo para um dia YYYY-MM-DD → ISO estável. */

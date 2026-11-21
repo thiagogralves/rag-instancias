@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts"
 import { INSTANCES } from "./data"
-import { dayKey, formatDuration, formatWhen, formatZeny, roleLabel } from "./format"
+import { cycleKey, formatDuration, formatWhen, formatZeny, roleLabel } from "./format"
 import { KpiModal, type KpiRow } from "./KpiModal"
 import { RO } from "./ro"
 import type { GameState, Op, Person, SectionId } from "./types"
@@ -90,7 +90,7 @@ export function Dashboard({
   const other: Person = viewer === "thiago" ? "rafael" : "thiago"
   const youKey = roleLabel(viewer)
   const otherKey = roleLabel(other)
-  const today = dayKey(new Date(now).toISOString())
+  const today = cycleKey(now)
 
   const view = useMemo(() => {
     const history = state.history.filter((event) => inRange(event.at, range, now))
@@ -134,7 +134,7 @@ export function Dashboard({
     function zenyFor(rows: typeof loot, windowMs?: number) {
       return rows
         .filter((row) => {
-          if (windowMs == null) return dayKey(row.at) === today
+          if (windowMs == null) return (row.day || cycleKey(new Date(row.at).getTime())) === today
           return now - new Date(row.at).getTime() <= windowMs
         })
         .reduce((sum, row) => sum + row.qty * row.price, 0)
@@ -195,18 +195,18 @@ export function Dashboard({
 
     const lineDays = range === "7" ? 7 : 30
     const keys = Array.from({ length: lineDays }, (_, index) =>
-      dayKey(new Date(now - (lineDays - 1 - index) * dayMs).toISOString()),
+      cycleKey(now - (lineDays - 1 - index) * dayMs),
     )
     const line = keys.map((key) => ({
       name: `${key.slice(8, 10)}/${key.slice(5, 7)}`,
-      [youKey]: history.filter((event) => event.user === viewer && dayKey(event.at) === key).length,
-      [otherKey]: history.filter((event) => event.user === other && dayKey(event.at) === key).length,
+      [youKey]: history.filter((event) => event.user === viewer && cycleKey(new Date(event.at).getTime()) === key).length,
+      [otherKey]: history.filter((event) => event.user === other && cycleKey(new Date(event.at).getTime()) === key).length,
     }))
 
     const bySectionZeny = keys.map((key) => ({
       name: `${key.slice(8, 10)}/${key.slice(5, 7)}`,
-      [youKey]: lootYou.filter((row) => dayKey(row.at) === key).reduce((sum, row) => sum + row.qty * row.price, 0),
-      [otherKey]: lootOther.filter((row) => dayKey(row.at) === key).reduce((sum, row) => sum + row.qty * row.price, 0),
+      [youKey]: lootYou.filter((row) => (row.day || cycleKey(new Date(row.at).getTime())) === key).reduce((sum, row) => sum + row.qty * row.price, 0),
+      [otherKey]: lootOther.filter((row) => (row.day || cycleKey(new Date(row.at).getTime())) === key).reduce((sum, row) => sum + row.qty * row.price, 0),
     }))
 
     return {
